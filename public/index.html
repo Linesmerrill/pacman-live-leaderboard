@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PAC-MAN MAZE — LIVE LEADERBOARD</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/board.css">
+  <link rel="stylesheet" href="/css/ui.css">
+</head>
+<body>
+  <div class="frame" id="frame">
+    <span class="pellet tl"></span><span class="pellet tr"></span><span class="pellet bl"></span><span class="pellet br"></span>
+
+    <header class="marquee">
+      <div class="marquee-ghosts" id="ghosts-left" aria-hidden="true"></div>
+      <div class="marquee-center">
+        <h1 class="title" id="title" aria-label="PAC-MAN MAZE"></h1>
+        <div class="subtitle-row">
+          <span class="sub-dots" aria-hidden="true"></span>
+          <p class="subtitle" id="subtitle" aria-label="LIVE LEADERBOARD"></p>
+          <span class="sub-dots" aria-hidden="true"></span>
+        </div>
+      </div>
+      <div class="marquee-ghosts" id="ghosts-right" aria-hidden="true"></div>
+    </header>
+
+    <main class="board" id="board" data-layout="empty" aria-live="polite">
+      <section class="group top-group" id="top-group">
+        <div class="group-title" id="top-title"></div>
+        <div class="group-cols" id="top-cols"></div>
+      </section>
+      <section class="group pager-group" id="pager-group">
+        <div class="group-title" id="pager-title"></div>
+        <div class="group-cols" id="pager-cols"></div>
+        <div class="wipe" id="wipe" aria-hidden="true">
+          <div class="wipe-eaten"></div>
+          <div class="wipe-pac" id="wipe-pac"></div>
+        </div>
+      </section>
+      <div class="empty" id="empty"></div>
+    </main>
+
+    <footer class="ticker">
+      <div class="ticker-side" id="last-run"></div>
+      <button class="add-btn" id="add-btn" type="button" aria-label="Add a player's score" title="Add a player's score (or just start typing their initials)"></button>
+      <div class="ticker-side right" id="players"></div>
+    </footer>
+
+    <div class="conn" id="conn" hidden></div>
+  </div>
+
+  <div class="overlay" id="overlay" hidden>
+    <div class="overlay-inner">
+      <div class="overlay-banner" id="overlay-banner"></div>
+      <div class="overlay-initials" id="overlay-initials"></div>
+      <div class="overlay-score" id="overlay-score"></div>
+      <div class="overlay-chase" id="overlay-chase"></div>
+    </div>
+  </div>
+
+  <div class="entry-panel ui" id="entry-panel" hidden>
+    <div class="entry-sheet" role="dialog" aria-modal="true" aria-label="Add a player's score">
+      <div class="entry-head">
+        <div class="entry-title" id="entry-title"></div>
+        <a class="entry-manage" href="/admin/settings" target="_blank" rel="noopener">Manage scores ↗</a>
+      </div>
+      <div id="entry-root"></div>
+      <div class="entry-last" id="entry-last" hidden></div>
+    </div>
+  </div>
+
+  <script type="module" src="/js/leaderboard.js"></script>
+</body>
+</html>

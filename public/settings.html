@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Manage Scores — Pac-Man Maze</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/ui.css">
+  <link rel="stylesheet" href="/css/staff.css">
+</head>
+<body class="staff ui">
+  <header class="topbar">
+    <a class="brand" href="/admin" aria-label="Back to staff entry">
+      <span class="brand-logo" id="brand"></span>
+      <span class="brand-sub">Manage scores</span>
+    </a>
+    <nav class="topbar-links">
+      <span class="status" id="status" data-state="connecting"><span class="status-dot"></span><span id="status-text">Connecting…</span></span>
+      <a class="toplink" href="/" target="_blank" rel="noopener">Open TV board ↗</a>
+      <a class="toplink toplink-strong" href="/admin">← Back to score entry</a>
+    </nav>
+  </header>
+
+  <main class="settings-layout">
+    <section class="card scores-card" aria-labelledby="scores-title">
+      <div class="section-head">
+        <h2 id="scores-title">All scores <span class="pill" id="count">0</span></h2>
+        <div class="tools">
+          <input type="search" id="filter" class="text-input" placeholder="Search…" maxlength="3" autocapitalize="characters" autocomplete="off" aria-label="Filter by initials">
+          <select id="sort" class="text-input" aria-label="Sort scores">
+            <option value="rank">By rank</option>
+            <option value="newest">Newest first</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="scores-table">
+          <thead>
+            <tr>
+              <th scope="col">Rank</th>
+              <th scope="col">Player</th>
+              <th scope="col" class="num">Pac-Dots</th>
+              <th scope="col" class="num time-col">Time</th>
+              <th scope="col">Entered</th>
+              <th scope="col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody id="scores"></tbody>
+        </table>
+      </div>
+      <p class="muted empty-note" id="scores-empty" hidden>No scores yet.</p>
+    </section>
+
+    <div class="settings-side">
+      <section class="card" aria-labelledby="timer-title">
+        <h2 id="timer-title">Completion timer</h2>
+        <p class="muted">When on, staff can enter each run’s time in seconds. Most Pac-Dots still wins; the faster time breaks ties. The TV adds a TIME column.</p>
+        <label class="switch">
+          <input type="checkbox" id="time-toggle" role="switch">
+          <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+          <span class="switch-label" id="time-toggle-label">Off</span>
+        </label>
+      </section>
+
+      <section class="card" aria-labelledby="deny-title">
+        <h2 id="deny-title">Blocked initials</h2>
+        <p class="muted">A built-in list blocks <strong id="builtin-count">—</strong> inappropriate combos and catches look-alike numbers (4→A, 5→S, 0→O…). Add your own below, separated by spaces or commas. Use <code>?</code> as a wildcard, e.g. <code>B?T</code>.</p>
+        <textarea id="deny" class="text-input mono" rows="3" spellcheck="false" autocapitalize="characters" placeholder="e.g. ABC XYZ"></textarea>
+        <div class="inline-actions">
+          <button type="button" class="btn" id="deny-save">Save blocked list</button>
+          <span class="muted" id="deny-msg" role="status"></span>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="data-title">
+        <h2 id="data-title">Backup &amp; export</h2>
+        <p class="muted">Scores are saved on this Mac instantly. Make an extra backup copy any time, or download a spreadsheet.</p>
+        <div class="inline-actions">
+          <button type="button" class="btn" id="export">Download CSV</button>
+          <button type="button" class="btn" id="backup">Save backup now</button>
+        </div>
+        <p class="muted small" id="backup-msg" role="status"></p>
+      </section>
+
+      <section class="card danger-zone" aria-labelledby="reset-title">
+        <h2 id="reset-title">Clear leaderboard</h2>
+        <p class="muted">Removes every score from the TV — for example, before the next event night. A backup copy is saved automatically first.</p>
+        <button type="button" class="btn btn-danger" id="reset">Clear leaderboard…</button>
+      </section>
+    </div>
+  </main>
+
+  <script type="module" src="/js/settings.js"></script>
+</body>
+</html>

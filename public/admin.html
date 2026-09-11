@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Staff Score Entry — Pac-Man Maze</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/ui.css">
+  <link rel="stylesheet" href="/css/staff.css">
+</head>
+<body class="staff ui">
+  <header class="topbar">
+    <a class="brand" href="/admin" aria-label="Pac-Man Maze staff entry">
+      <span class="brand-logo" id="brand"></span>
+      <span class="brand-sub">Staff score entry</span>
+    </a>
+    <nav class="topbar-links">
+      <span class="status" id="status" data-state="connecting"><span class="status-dot"></span><span id="status-text">Connecting…</span></span>
+      <a class="toplink" href="/" target="_blank" rel="noopener">Open TV board ↗</a>
+      <a class="toplink" href="/admin/settings">Manage scores</a>
+    </nav>
+  </header>
+
+  <main class="entry-layout">
+    <section class="card entry-card" id="entry-root" aria-label="Add a score"></section>
+
+    <section class="card recent-card" aria-labelledby="recent-title">
+      <h2 id="recent-title">Recent entries</h2>
+      <ol id="recent" class="recent-list"></ol>
+      <p class="muted" id="recent-empty" hidden>No scores yet tonight. The first run will show up here.</p>
+    </section>
+  </main>
+
+  <script type="module" src="/js/admin.js"></script>
+</body>
+</html>

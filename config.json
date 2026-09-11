@@ -1,0 +1,16 @@
+{
+  "_help": "Edit and restart the app to apply. Every key is optional. See README.md > Configuration.",
+  "port": 3000,
+  "host": "0.0.0.0",
+  "databaseFile": "data/pacman-maze.db",
+  "backupDirectory": "backups",
+  "leaderboardSize": 10,
+  "boardColumns": 3,
+  "pageSeconds": 10,
+  "spotlightSeconds": 20,
+  "completionTimeEnabled": false,
+  "adminPin": "",
+  "maxScore": 999,
+  "maxTimeSeconds": 3600,
+  "duplicateWarningSeconds": 60
+}

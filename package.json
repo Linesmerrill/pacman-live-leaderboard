@@ -1,0 +1,25 @@
+{
+  "name": "pacman-maze-leaderboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Live, offline leaderboard for the Pac-Man Maze Halloween attraction.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.ts",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/server.ts",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc -p tsconfig.json",
+    "check": "npm run typecheck && npm test",
+    "backup": "node --disable-warning=ExperimentalWarning scripts/backup.ts",
+    "kiosk": "bash scripts/start-kiosk.sh",
+    "autostart:install": "bash scripts/install-autostart.sh",
+    "autostart:remove": "bash scripts/uninstall-autostart.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.2",
+    "typescript": "^7.0.2"
+  }
+}
