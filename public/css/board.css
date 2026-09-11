@@ -509,7 +509,7 @@ ol {
   gap: calc(var(--u) * 3);
   height: calc(var(--u) * 4.4);
   margin-top: calc(var(--u) * 1);
-  padding: 0 calc(var(--u) * 1.5);
+  padding: 0 calc(var(--u) * 3.2); /* clears the blinking corner pellets */
 }
 
 .ticker-side {

@@ -7,6 +7,8 @@ Kids run the maze collecting Pac-Dots (bean bags). Each Pac-Dot is 1 point. At t
 the dots, the child picks 3-character initials (`MAX`, `J07`, …), staff type them in, and the TV
 updates instantly — jumping straight to that kid's spot on the board so they can grab a photo.
 
+![The TV leaderboard: top 10 pinned on the left, ranks 11–30 on the right, auto-paging through everyone else](docs/screenshots/tv-board.png)
+
 | Screen | Address | Who uses it |
 | --- | --- | --- |
 | **TV leaderboard** (with built-in **+ ADD PLAYER** entry) | `http://localhost:3000/` | Everyone / staff at the Mac |
@@ -24,9 +26,10 @@ updates instantly — jumping straight to that kid's spot on the board so they c
    ```bash
    brew install node
    ```
-3. Put this project folder somewhere simple, such as `~/pacman-maze` (avoid Desktop/Documents/Downloads
-   if you plan to use auto-start — see below). Then, in Terminal:
+3. Get the project into a simple folder such as `~/pacman-maze` (avoid Desktop/Documents/Downloads
+   if you plan to use auto-start — see below). In Terminal:
    ```bash
+   git clone https://github.com/Linesmerrill/pacman-live-leaderboard.git ~/pacman-maze
    cd ~/pacman-maze
    npm install
    ```
@@ -63,9 +66,13 @@ Leave that Terminal window open. Stop the app with **Ctrl+C** (scores are alread
 - **Esc** closes the panel. The panel has **Undo** for the last player you added, and a
   **Manage scores** link.
 
+![The + ADD PLAYER panel on the TV](docs/screenshots/tv-add-player.png)
+
 **From a tablet or laptop** on the same Wi-Fi, open the “On this Wi-Fi” address printed at startup
 (e.g. `http://192.168.1.20:3000/admin`). It has the same entry form plus a list of recent entries with
 **Show on TV**, **Edit** and **Delete** buttons.
+
+![Staff score entry at /admin](docs/screenshots/staff-entry.png)
 
 ### 4. Open the leaderboard screen
 
@@ -101,9 +108,15 @@ refreshes, closed tabs, app restarts and Mac restarts.
 For an off-site copy, drag the `backups/` folder (or the whole `data/` folder while the app is stopped)
 to a USB stick.
 
+![Manage scores at /admin/settings: edit, delete, Show on TV, timer, blocked initials, backup, CSV, reset](docs/screenshots/manage-scores.png)
+
 ---
 
 ## How the TV board works
+
+| Spotlight — the TV jumps to each new player | NEW HIGH SCORE! celebration |
+| --- | --- |
+| ![SAM is 21st of 46, highlighted on page 1 of the lower ranks](docs/screenshots/tv-spotlight.png) | ![NEW HIGH SCORE overlay with Pac-Man chasing frightened ghosts](docs/screenshots/tv-new-high-score.png) |
 
 - **Top 10 always pinned** on the left, with 1st–3rd in gold/silver/bronze with fruit bonuses. Tied
   scores share a rank (1st, 1st, 3rd).
@@ -225,6 +238,7 @@ public/
   js/             leaderboard, entry form, paging, pixel font, sprites, live feed…
 test/             node:test suites (ranking, validation, service, paging, HTTP API)
 scripts/          kiosk launcher, auto-start installer, backup
+docs/screenshots/ README images
 ```
 
 ### API (for the curious)
