@@ -156,3 +156,21 @@ export const COMMAND_LABELS: Record<GameCommand, string> = {
   'volume-down': 'VOL −',
   mute: 'MUTE',
 };
+
+/** One line per key, shown in the Stream Deck action list and in the key's settings panel. */
+export const COMMAND_DESCRIPTIONS: Record<GameCommand, string> = {
+  ready: 'Intro sound, board waiting for the next runner.',
+  countdown: '3·2·1 on the TV, then the run starts by itself.',
+  start: 'Begin the run: gameplay music and the run timer.',
+  'power-up': 'Power mode — ghosts turn blue and the clock gets extra seconds.',
+  'ghost-tag': 'A ghost caught someone.',
+  fruit: 'Bonus fruit sound.',
+  'pac-dot': 'A single pac-dot blip.',
+  'high-score': 'Play the high-score fanfare.',
+  finish: 'End the run now and play the finish sound.',
+  'stop-all': 'Silence everything, leave the state alone.',
+  reset: 'Back to the idle board, ready for the next group.',
+  'volume-up': 'TV sound up.',
+  'volume-down': 'TV sound down.',
+  mute: 'Toggle the TV sound on and off.',
+};

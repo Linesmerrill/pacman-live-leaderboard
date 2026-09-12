@@ -270,15 +270,18 @@ press three buttons in the right order.
 The keys also show what's happening: POWER UP counts down on the key itself, the live step lights up,
 commands that don't apply are dimmed, and every key says `(offline)` if the leaderboard isn't running.
 
-**Setup** (needs the Stream Deck app 7.1 or newer):
+**Setup** (needs the Stream Deck app 7.1 or newer — `brew install --cask elgato-stream-deck`):
 
 ```bash
 npm run streamdeck:build
 npm run streamdeck:install
+npm run streamdeck:profile   # optional: lays out all 15 keys in one go
 ```
 
-Then drag **Game Action** onto a key and pick its job. Full details, including how to point a key at
-another Mac, are in [`apps/streamdeck/README.md`](apps/streamdeck/README.md).
+`streamdeck:profile` builds a profile for the deck plugged into this Mac; double-click it and confirm
+the import. Otherwise open the **Pac-Man Maze** category in the actions list and drag the keys over
+one at a time — each one is its own action, so there is nothing to configure. Full details, including
+how to point the keys at another Mac, are in [`apps/streamdeck/README.md`](apps/streamdeck/README.md).
 
 **No Stream Deck?** The same commands work from anything that can send a local HTTP request:
 
@@ -442,5 +445,6 @@ without plugging anything in.
 | Initials rejected | They're on the blocked list, or aren't exactly 3 letters/numbers. Ask the kid for another combo. |
 | Stream Deck keys say “(offline)” | The leaderboard isn't running, or the key points at the wrong address. Start it with `npm start`, or set the address in the key's Connection section. |
 | Stream Deck shows no Pac-Man Maze actions | Re-run `npm run streamdeck:build && npm run streamdeck:install`, and check the Stream Deck app is version 7.1 or newer. |
+| The profile import does nothing | Stream Deck asks you to confirm the import in a dialog — click through it. If it still doesn't appear, drag the keys on by hand instead. |
 | My own sound files aren't playing | Restart the app (the folder is read at startup), then check <http://localhost:3000/api/audio>. File names must match the cue names exactly, e.g. `go.wav`, and reload the TV page afterwards. |
 | No sound on the TV | Check the speaker button next to + ADD PLAYER, the TV's own volume, and that the Mac is playing audio through the TV (System Settings → Sound → Output). Outside kiosk mode, click the board once to let the browser start audio. |

@@ -1,4 +1,4 @@
-import type { GameCommand } from '../../../packages/shared/game-events.ts';
+import type { GameCommand, GameState } from '../../../packages/shared/game-events.ts';
 
 /** Original Pac-Man-flavoured key art, drawn as SVG so the keys stay crisp and need no image files. */
 const ART: Record<GameCommand, (color: string) => string> = {
@@ -67,4 +67,49 @@ export function keyImage({ command, dimmed = false, active = false, offline = fa
 ${offline ? '<circle cx="61" cy="61" r="6" fill="#ff4d6d"/>' : ''}
 </svg>`;
   return `data:image/svg+xml;charset=utf8,${encodeURIComponent(svg)}`;
+}
+
+/** Colour of the status tile, so the deck shows the game's state from across the room. */
+const STATE_COLORS: Record<GameState, string> = {
+  idle: '#8ea2ff',
+  ready: '#ffe135',
+  countdown: '#ffe135',
+  playing: '#3ddc84',
+  'power-mode': '#ffffff',
+  finished: '#3cf2ff',
+};
+
+/**
+ * The status tile: Pac-Man chasing a row of dots, coloured by what the game is doing.
+ * Drawn here rather than shipped as images so it stays crisp on every deck.
+ */
+export function statusImage({ state, offline }: { state: GameState; offline: boolean }): string {
+  const color = offline ? '#5b6280' : STATE_COLORS[state];
+  const mouth = state === 'playing' || state === 'power-mode' ? 26 : 8;
+  const dots = [46, 58, 70].map((x) => `<circle cx="${x}" cy="26" r="3.5" fill="${color}" opacity="${offline ? 0.4 : 0.85}"/>`).join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
+<rect width="72" height="72" rx="10" fill="#000000"/>
+<rect x="2" y="2" width="68" height="68" rx="9" fill="none" stroke="${offline ? '#ff4d6d' : color}" stroke-width="2" opacity="${offline ? 0.7 : 0.65}"/>
+<path d="M26 26 ${26 + 18 * Math.cos((mouth * Math.PI) / 180)} ${26 - 18 * Math.sin((mouth * Math.PI) / 180)}a18 18 0 1 0 0 ${2 * 18 * Math.sin((mouth * Math.PI) / 180)}z" fill="${color}"/>
+${dots}
+</svg>`;
+  return `data:image/svg+xml;charset=utf8,${encodeURIComponent(svg)}`;
+}
+
+/**
+ * Flat artwork for the Stream Deck actions list — no key background, transparent around it.
+ * `npm run streamdeck:icons` renders these to the PNG files the manifest points at.
+ */
+export function actionIconSvg(command: GameCommand, size: number): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 72 72">
+<g transform="translate(4,2)">${ART[command](COLORS[command])}</g>
+</svg>`;
+}
+
+/** Flat artwork for the status tile in the actions list. */
+export function statusIconSvg(size: number): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 72 72">
+<path d="M34 36 52 21a24 24 0 1 0 0 30z" fill="#ffe135"/>
+<circle cx="60" cy="36" r="4.5" fill="#8ea2ff"/>
+</svg>`;
 }

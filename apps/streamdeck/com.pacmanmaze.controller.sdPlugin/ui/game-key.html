@@ -15,10 +15,12 @@
   </style>
 </head>
 <body>
-  <label>
+  <label id="command-row">
     <span>Action</span>
     <select id="command"></select>
   </label>
+
+  <p class="hint" id="fixed-note" hidden>This key already knows what it does — just press it.</p>
 
   <details>
     <summary>Connection</summary>
@@ -30,7 +32,8 @@
       <span>Staff PIN (only if one is set)</span>
       <input id="pin" type="password" autocomplete="off">
     </label>
-    <p class="hint">Leave the address blank when the leaderboard runs on this computer.</p>
+    <p class="hint">Leave the address blank when the leaderboard runs on this computer. One key
+      is enough: whatever you set here is used by every Pac-Man Maze key on the deck.</p>
   </details>
 
   <script>
@@ -54,6 +57,7 @@
     let websocket = null;
     let context = null;
     let settings = {};
+    let fixedAction = false;
 
     const commandEl = document.getElementById('command');
     const urlEl = document.getElementById('url');
@@ -67,7 +71,9 @@
     }
 
     function save() {
-      settings = { command: commandEl.value, url: urlEl.value.trim(), pin: pinEl.value };
+      settings = { url: urlEl.value.trim(), pin: pinEl.value };
+      // Dedicated keys carry their command in the action id; only the spare key stores one.
+      if (!fixedAction) settings.command = commandEl.value;
       websocket?.send(JSON.stringify({ event: 'setSettings', context, payload: settings }));
     }
 
@@ -77,14 +83,19 @@
     // Called by the Stream Deck app when the property inspector opens.
     function connectElgatoStreamDeckSocket(port, uuid, registerEvent, _info, actionInfo) {
       context = uuid;
-      settings = JSON.parse(actionInfo).payload.settings ?? {};
+      const info = JSON.parse(actionInfo);
+      settings = info.payload.settings ?? {};
+      // Every action except the spare "Game Action" has its command baked into its id.
+      fixedAction = info.action !== 'com.pacmanmaze.controller.game-key';
+      document.getElementById('command-row').hidden = fixedAction;
+      document.getElementById('fixed-note').hidden = !fixedAction;
       commandEl.value = settings.command ?? 'ready';
       urlEl.value = settings.url ?? '';
       pinEl.value = settings.pin ?? '';
       websocket = new WebSocket(`ws://127.0.0.1:${port}`);
       websocket.addEventListener('open', () => {
         websocket.send(JSON.stringify({ event: registerEvent, uuid }));
-        if (!settings.command) save(); // default a fresh key to READY
+        if (!fixedAction && !settings.command) save(); // default a fresh spare key to READY
       });
     }
     window.connectElgatoStreamDeckSocket = connectElgatoStreamDeckSocket;

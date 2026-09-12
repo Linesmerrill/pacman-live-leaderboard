@@ -47,6 +47,11 @@ export class GameClient {
     this.#connect();
   }
 
+  /** Drop the live connection and dial the leaderboard again (the status key does this). */
+  reconnect(): void {
+    this.#connect();
+  }
+
   /** Press a button. Returns false when the leaderboard couldn't be reached. */
   async send(command: GameCommand): Promise<boolean> {
     try {

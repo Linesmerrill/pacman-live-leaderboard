@@ -23,6 +23,8 @@
     "autostart:remove": "bash scripts/uninstall-autostart.sh",
     "streamdeck:build": "npm run build --workspace @pacman/streamdeck",
     "streamdeck:install": "npm run install-plugin --workspace @pacman/streamdeck",
+    "streamdeck:icons": "npm run icons --workspace @pacman/streamdeck",
+    "streamdeck:profile": "npm run profile --workspace @pacman/streamdeck",
     "test:leaderboard": "npm test --workspace @pacman/leaderboard"
   },
   "devDependencies": {

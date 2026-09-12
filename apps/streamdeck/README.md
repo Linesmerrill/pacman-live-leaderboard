@@ -7,7 +7,8 @@ running on the same Mac, which owns the game state, the sounds and what the TV s
 
 ## What a key does
 
-Drag **Game Action** onto any key, then pick its job in the property inspector:
+Every key is its own action. Open the **Pac-Man Maze** category in the Stream Deck actions list and
+drag the one you want onto the deck — there is nothing to configure, each key already knows its job:
 
 | Key | What happens |
 | --- | --- |
@@ -21,6 +22,8 @@ Drag **Game Action** onto any key, then pick its job in the property inspector:
 | **STOP ALL** | Silences everything without changing the state |
 | **RESET** | Back to the idle leaderboard |
 | **VOL + / VOL − / MUTE** | TV volume and mute (saved, so it survives a restart) |
+| **Game Status** | Presses nothing: shows the state, the seconds left and how many players are on the board |
+| **Game Action (pick one)** | A spare key — choose what it does in its settings |
 
 Keys also *show* what's happening: POWER UP counts its seconds down, VOL keys show the current
 volume, MUTE shows when sound is off, the live key lights up, keys that don't apply right now are
@@ -32,7 +35,19 @@ dimmed, and every key shows `(offline)` if the leaderboard can't be reached.
 npm install                  # from the repo root, once
 npm run streamdeck:build
 npm run streamdeck:install
+npm run streamdeck:profile   # optional: a ready-made 15-key layout
 ```
+
+`streamdeck:profile` writes `profiles/Pac-Man Maze.streamDeckProfile` for the deck plugged into this
+Mac. Double-click it and confirm the import to get every key placed at once:
+
+```
+READY   3·2·1   START    POWER UP    FINISH
+GHOST   FRUIT   PAC-DOT  HIGH SCORE  RESET
+VOL −   VOL +   MUTE     STOP ALL    STATUS
+```
+
+Prefer to arrange it yourself? Skip the profile and drag the keys over one at a time.
 
 The installer quits Stream Deck, copies the plugin in, and starts it again. Requires the **Stream
 Deck app 7.1 or newer** (it ships the Node runtime the plugin needs — you don't need Node for the
@@ -42,7 +57,8 @@ Re-run both commands after changing anything in `src/`.
 
 ## Settings
 
-Each key has an optional **Connection** section:
+Each key has an optional **Connection** section. You only need to fill it in on *one* key — the
+address is shared by every Pac-Man Maze key on the deck:
 
 - **Leaderboard address** — leave blank for `http://localhost:3000`. Set it if the leaderboard runs on
   a different Mac, or on a different port.
@@ -57,7 +73,8 @@ Stream Deck key ──POST /api/game/<command>──▶ leaderboard app ──Se
 ```
 
 The command list lives in [`packages/shared/game-events.ts`](../../packages/shared/game-events.ts) and is
-imported by both apps, so there are no magic strings to keep in sync.
+imported by both apps, so there are no magic strings to keep in sync. The build generates the
+manifest's action list from it too, so a new command becomes a new key with nothing to wire by hand.
 
 ## Development
 
@@ -69,14 +86,17 @@ npm run watch --workspace @pacman/streamdeck    # rebuild on save
 Source layout:
 
 ```
-src/plugin.ts     entry point: registers the action, repaints keys on game changes
-src/game-key.ts   the configurable key action
+src/plugin.ts     entry point: registers every action, repaints keys on game changes
+src/actions.ts    the key actions — one per command, plus the status tile and the spare key
 src/client.ts     talks to the leaderboard (commands + live state, with reconnect)
 src/icons.ts      original SVG key art, one icon per command
+build.mjs         bundles the plugin and regenerates the manifest's action list
+scripts/make-icons.mjs    renders the actions-list icons (Chrome as an SVG rasteriser)
+scripts/make-profile.mjs  builds the ready-made deck layout
 com.pacmanmaze.controller.sdPlugin/
   manifest.json   plugin metadata for Stream Deck
   ui/game-key.html  property inspector (self-contained, works offline)
-  imgs/           plugin and action icons
+  imgs/           plugin and action icons (one per command)
   bin/            build output (not committed)
 ```
 

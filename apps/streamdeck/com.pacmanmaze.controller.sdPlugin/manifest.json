@@ -16,17 +16,280 @@
     "MinimumVersion": "7.1"
   },
   "OS": [
-    { "Platform": "mac", "MinimumVersion": "12" },
-    { "Platform": "windows", "MinimumVersion": "10" }
+    {
+      "Platform": "mac",
+      "MinimumVersion": "12"
+    },
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
   ],
   "Actions": [
     {
-      "Name": "Game Action",
+      "Name": "READY",
+      "UUID": "com.pacmanmaze.controller.ready",
+      "Icon": "imgs/actions/ready/icon",
+      "Tooltip": "Intro sound, board waiting for the next runner.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "3·2·1",
+      "UUID": "com.pacmanmaze.controller.countdown",
+      "Icon": "imgs/actions/countdown/icon",
+      "Tooltip": "3·2·1 on the TV, then the run starts by itself.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "START",
+      "UUID": "com.pacmanmaze.controller.start",
+      "Icon": "imgs/actions/start/icon",
+      "Tooltip": "Begin the run: gameplay music and the run timer.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "POWER UP",
+      "UUID": "com.pacmanmaze.controller.power-up",
+      "Icon": "imgs/actions/power-up/icon",
+      "Tooltip": "Power mode — ghosts turn blue and the clock gets extra seconds.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "GHOST TAG",
+      "UUID": "com.pacmanmaze.controller.ghost-tag",
+      "Icon": "imgs/actions/ghost-tag/icon",
+      "Tooltip": "A ghost caught someone.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "FRUIT",
+      "UUID": "com.pacmanmaze.controller.fruit",
+      "Icon": "imgs/actions/fruit/icon",
+      "Tooltip": "Bonus fruit sound.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "PAC-DOT",
+      "UUID": "com.pacmanmaze.controller.pac-dot",
+      "Icon": "imgs/actions/pac-dot/icon",
+      "Tooltip": "A single pac-dot blip.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "HIGH SCORE",
+      "UUID": "com.pacmanmaze.controller.high-score",
+      "Icon": "imgs/actions/high-score/icon",
+      "Tooltip": "Play the high-score fanfare.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "FINISH",
+      "UUID": "com.pacmanmaze.controller.finish",
+      "Icon": "imgs/actions/finish/icon",
+      "Tooltip": "End the run now and play the finish sound.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "STOP ALL",
+      "UUID": "com.pacmanmaze.controller.stop-all",
+      "Icon": "imgs/actions/stop-all/icon",
+      "Tooltip": "Silence everything, leave the state alone.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "RESET",
+      "UUID": "com.pacmanmaze.controller.reset",
+      "Icon": "imgs/actions/reset/icon",
+      "Tooltip": "Back to the idle board, ready for the next group.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "VOL +",
+      "UUID": "com.pacmanmaze.controller.volume-up",
+      "Icon": "imgs/actions/volume-up/icon",
+      "Tooltip": "TV sound up.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "VOL −",
+      "UUID": "com.pacmanmaze.controller.volume-down",
+      "Icon": "imgs/actions/volume-down/icon",
+      "Tooltip": "TV sound down.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "MUTE",
+      "UUID": "com.pacmanmaze.controller.mute",
+      "Icon": "imgs/actions/mute/icon",
+      "Tooltip": "Toggle the TV sound on and off.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "Game Status",
+      "UUID": "com.pacmanmaze.controller.status",
+      "Icon": "imgs/actions/status/icon",
+      "Tooltip": "Shows what the game is doing, the time left, and how many players are on the board.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "Game Action (pick one)",
       "UUID": "com.pacmanmaze.controller.game-key",
       "Icon": "imgs/actions/game-key/icon",
-      "Tooltip": "Pick a Pac-Man Maze action for this key: READY, START, POWER UP, FINISH…",
+      "Tooltip": "A spare key: choose which action it runs in its settings.",
       "PropertyInspectorPath": "ui/game-key.html",
-      "Controllers": ["Keypad"],
+      "Controllers": [
+        "Keypad"
+      ],
       "States": [
         {
           "Image": "imgs/actions/game-key/key",

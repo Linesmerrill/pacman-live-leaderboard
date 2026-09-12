@@ -19,8 +19,12 @@ if [[ ! -d "$DEST_DIR" ]]; then
   exit 1
 fi
 
-echo "Quitting Stream Deck…"
-osascript -e 'quit app "Stream Deck"' 2>/dev/null || true
+# The app is "Elgato Stream Deck" on newer releases and "Stream Deck" on older ones.
+APP="Elgato Stream Deck"
+[[ -d "/Applications/$APP.app" ]] || APP="Stream Deck"
+
+echo "Quitting $APP…"
+osascript -e "quit app \"$APP\"" 2>/dev/null || true
 sleep 2
 
 rm -rf "$DEST"
@@ -29,8 +33,9 @@ mkdir -p "$DEST"
 cp -R "$SRC/" "$DEST/"
 echo "✓ Installed to: $DEST"
 
-echo "Starting Stream Deck…"
-open -a "Stream Deck" 2>/dev/null || echo "Start the Stream Deck app yourself to load the plugin."
+echo "Starting $APP…"
+open -a "$APP" 2>/dev/null || echo "Start the Stream Deck app yourself to load the plugin."
 echo
-echo "In Stream Deck, find “Pac-Man Maze” in the actions list on the right, drag"
-echo "“Game Action” onto a key, and choose what that key does (READY, START, POWER UP…)."
+echo "In Stream Deck, open the “Pac-Man Maze” category in the actions list on the right."
+echo "Every key is its own action — drag READY, 3·2·1, START, POWER UP… straight onto"
+echo "the deck. There is nothing to configure: each key already knows what it does."
