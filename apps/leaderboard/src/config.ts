@@ -2,7 +2,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const PROJECT_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+/** apps/leaderboard — where the server's own files (public/, schema) live. */
+export const APP_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+/** Repository root — where config.json, data/ and backups/ live, shared with the other apps. */
+export const PROJECT_ROOT = path.resolve(APP_ROOT, '../..');
 
 export interface AppConfig {
   /** TCP port for the web server. */

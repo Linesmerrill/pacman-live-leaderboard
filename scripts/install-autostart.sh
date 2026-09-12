@@ -38,7 +38,7 @@ cat >"$AGENTS/$SERVER_LABEL.plist" <<PLIST
   <array>
     <string>$NODE</string>
     <string>--disable-warning=ExperimentalWarning</string>
-    <string>$DIR/src/server.ts</string>
+    <string>$DIR/apps/leaderboard/src/server.ts</string>
   </array>
   <key>WorkingDirectory</key><string>$DIR</string>
   <key>RunAtLoad</key><true/>

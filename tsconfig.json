@@ -15,5 +15,5 @@
     "allowJs": true,
     "checkJs": false
   },
-  "include": ["src", "test", "scripts"]
+  "include": ["apps/leaderboard/src", "apps/leaderboard/test", "packages/shared", "scripts"]
 }

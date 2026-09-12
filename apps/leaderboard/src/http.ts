@@ -2,7 +2,7 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import path from 'node:path';
-import { PROJECT_ROOT } from './config.ts';
+import { APP_ROOT } from './config.ts';
 import { LiveHub } from './live.ts';
 import { NotFoundError, type LeaderboardService } from './service.ts';
 import { ValidationError } from './validation.ts';
@@ -98,7 +98,7 @@ function parseId(raw: string): number {
   return id;
 }
 
-export function createApp({ service, publicDir = path.join(PROJECT_ROOT, 'public'), log = () => {} }: AppOptions): App {
+export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), log = () => {} }: AppOptions): App {
   const hub = new LiveHub();
   const root = path.resolve(publicDir);
   const pin = service.config.adminPin;

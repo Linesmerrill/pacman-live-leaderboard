@@ -1,0 +1,12 @@
+{
+  "name": "@pacman/leaderboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TV leaderboard, staff screens, and the game/audio state machine for the Pac-Man Maze.",
+  "type": "module",
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.ts",
+    "dev": "node --disable-warning=ExperimentalWarning --watch src/server.ts",
+    "test": "node --disable-warning=ExperimentalWarning --test \"test/**/*.test.ts\""
+  }
+}
