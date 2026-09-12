@@ -11,12 +11,23 @@ export interface Settings {
   soundEnabled: boolean;
   /** TV master volume, 0–100. */
   soundVolume: number;
+  /** Run length in seconds before the maze finishes itself; 0 = no limit. */
+  runSeconds: number;
+  /** Power-pellet time: how long power mode lasts, and how much it adds to the run. */
+  powerPelletSeconds: number;
+  /** How many pellets can extend one run's clock. */
+  maxPellets: number;
+  /** Soft background music between runs. */
+  idleMusicEnabled: boolean;
+  idleMusicVolume: number;
   customDenyList: string[];
 }
 
 export interface DisplaySettings {
   soundEnabled: boolean;
   soundVolume: number;
+  idleMusicEnabled: boolean;
+  idleMusicVolume: number;
   rowsPerColumn: number;
   columns: number;
   pageSeconds: number;
@@ -61,6 +72,13 @@ export class NotFoundError extends Error {}
 const SETTING_TIME = 'completionTimeEnabled';
 const SETTING_SOUND = 'soundEnabled';
 const SETTING_VOLUME = 'soundVolume';
+/** Numbers staff can change live; the config file only seeds a brand-new database. */
+const NUMERIC_SETTINGS = {
+  runSeconds: { min: 0, max: 3600 },
+  powerPelletSeconds: { min: 1, max: 120 },
+  maxPellets: { min: 0, max: 20 },
+  idleMusicVolume: { min: 0, max: 100 },
+} as const;
 const SETTING_DENY = 'customDenyList';
 const SUBMISSION_MEMORY_MS = 15 * 60 * 1000;
 
@@ -120,10 +138,22 @@ export class LeaderboardService {
         customDenyList = [];
       }
     }
+    const idleMusic = this.#store.getSetting('idleMusicEnabled');
+    const numbers = Object.fromEntries(
+      Object.entries(NUMERIC_SETTINGS).map(([key, range]) => {
+        const stored = this.#store.getSetting(key);
+        const value = stored === null ? Number.NaN : Number(stored);
+        const fallback = this.#config[key as keyof typeof NUMERIC_SETTINGS];
+        return [key, Number.isFinite(value) && value >= range.min && value <= range.max ? value : fallback];
+      }),
+    ) as Record<keyof typeof NUMERIC_SETTINGS, number>;
+
     return {
       completionTimeEnabled: time === null ? this.#config.completionTimeEnabled : time === 'true',
       soundEnabled: sound === null ? this.#config.soundEnabled : sound === 'true',
       soundVolume: Number.isFinite(volume) && volume >= 0 && volume <= 100 ? volume : this.#config.soundVolume,
+      idleMusicEnabled: idleMusic === null ? this.#config.idleMusicEnabled : idleMusic === 'true',
+      ...numbers,
       customDenyList,
     };
   }
@@ -136,12 +166,21 @@ export class LeaderboardService {
     return { ...this.#settings, customDenyList: [...this.#settings.customDenyList], builtInDenyListSize: BUILT_IN_DENY_LIST.length };
   }
 
-  updateSettings(patch: { completionTimeEnabled?: unknown; soundEnabled?: unknown; soundVolume?: unknown; customDenyList?: unknown }): { rejectedDenyEntries: string[] } {
+  updateSettings(patch: Record<string, unknown>): { rejectedDenyEntries: string[] } {
     let rejectedDenyEntries: string[] = [];
-    for (const [field, key] of [['completionTimeEnabled', SETTING_TIME], ['soundEnabled', SETTING_SOUND]] as const) {
+    for (const [field, key] of [['completionTimeEnabled', SETTING_TIME], ['soundEnabled', SETTING_SOUND], ['idleMusicEnabled', 'idleMusicEnabled']] as const) {
       const value = patch[field];
       if (value === undefined) continue;
       if (typeof value !== 'boolean') throw new TypeError(`${field} must be true or false`);
+      this.#store.setSetting(key, String(value));
+    }
+    for (const [key, range] of Object.entries(NUMERIC_SETTINGS)) {
+      const raw = (patch as Record<string, unknown>)[key];
+      if (raw === undefined) continue;
+      const value = Number(raw);
+      if (!Number.isInteger(value) || value < range.min || value > range.max) {
+        throw new TypeError(`${key} must be a whole number from ${range.min} to ${range.max}`);
+      }
       this.#store.setSetting(key, String(value));
     }
     if (patch.soundVolume !== undefined) {
@@ -187,7 +226,8 @@ export class LeaderboardService {
       latest,
       completionTimeEnabled: this.#settings.completionTimeEnabled,
       maxScore: this.#config.maxScore,
-      display: { soundEnabled: this.#settings.soundEnabled, soundVolume: this.#settings.soundVolume, rowsPerColumn: leaderboardSize, columns: boardColumns, pageSeconds, spotlightSeconds },
+      display: { soundEnabled: this.#settings.soundEnabled, soundVolume: this.#settings.soundVolume,
+        idleMusicEnabled: this.#settings.idleMusicEnabled, idleMusicVolume: this.#settings.idleMusicVolume, rowsPerColumn: leaderboardSize, columns: boardColumns, pageSeconds, spotlightSeconds },
     };
   }
 

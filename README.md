@@ -135,6 +135,28 @@ to a USB stick.
   the TV loses the server for more than 5 seconds; it reconnects by itself.
 - The layout adapts to the screen shape (3 columns on a 16:9 TV, 2 on 4:3) and text auto-sizes to fit.
 
+## Run timer
+
+A maze session has a time limit, set in **Manage scores → Run timer** (30 seconds by default).
+START arms the clock and the TV counts it down; when it reaches zero the run **finishes by itself** —
+same as pressing FINISH.
+
+**Power pellets buy time.** Grabbing one adds `Power pellet (seconds)` to the clock that's already
+running, so a pellet taken with 1 second left doesn't restart the run, it extends it:
+
+```
+30s run, pellet grabbed at 0:29
+   └─ clock becomes 0:40, power mode runs 0:29 → 0:39
+      then normal play resumes for a second and the run finishes at 0:40
+```
+
+**Pellets stop paying out.** `Pellets that add time` (2 by default) caps how many pellets extend one
+session, so nobody can loop the maze forever while others queue. Beyond the cap, pellets still fire
+the sound, the blue ghosts and the flashing walls for everyone — they just don't add time.
+
+One clock covers **everyone in the maze at once**, which is what you want when you run several kids
+together: any pellet is live for the whole group. Set the run length to `0` for no limit.
+
 ## Sound effects
 
 The TV plays original arcade-style blips — square-wave jingles generated in the browser, so there are
@@ -162,7 +184,8 @@ built-in blips. The file name is the cue name:
 | `power-up.wav` | **Power pellet** — POWER UP pressed |
 | `pac-dot.wav` | **Eating a dot** — and repeated over and over for the whole run |
 | `pac-dot-2.wav` | Optional second chomp; the run alternates the two, like the arcade |
-| `finish.wav` | **Game over** — FINISH pressed |
+| `finish.wav` | **Game over** — FINISH pressed, or the run timer running out |
+| `intermission.wav` | Between runs — RESET pressed |
 
 `intro`, `countdown`, `power-end`, `ghost-tag`, `fruit`, `high-score` and `stop` work the same way, and
 `gameplay-loop` / `power-loop` replace the background music with a continuous track. `.wav`, `.mp3`,
@@ -177,6 +200,13 @@ Restart the app after adding files (the folder is read at startup) and check wha
 **These are your files.** Pac-Man's audio belongs to Bandai Namco, so use recordings you have the
 right to use. The folder is git-ignored, so your sounds stay on the event Mac and this public
 repository never redistributes them.
+
+### Background music between runs
+
+A soft, original chiptune bed plays on the TV whenever a run *isn't* under way — idle board, READY,
+and after a FINISH. It ducks under every sound effect and stops completely once a run starts, so it
+never fights the waka. It has its own switch and volume slider in **Manage scores → Background
+music** (on at 35% by default), separate from the TV volume.
 
 **Turning it off:** the speaker button next to **+ ADD PLAYER** on the TV, or **Manage scores → Sound
 effects**. The setting is saved on the server, so every screen agrees and it survives a restart. Set
@@ -221,7 +251,7 @@ press three buttons in the right order.
 | `ready` | Intro sound, TV shows `READY!` |
 | `countdown` | 3·2·1 on the TV, then starts the run automatically |
 | `start` | Starts the run, its clock, and the gameplay music |
-| `power-up` | Power mode for `powerModeSeconds`, then back to normal play by itself |
+| `power-up` | Power mode, and adds time to the run (see Run timer below) |
 | `ghost-tag`, `fruit`, `pac-dot` | One-shot sounds during a run |
 | `high-score` | Plays the high-score fanfare on demand |
 | `finish` | Ends the run: music stops, `FINISH!` on the TV |
@@ -317,7 +347,10 @@ Edit `config.json` and restart the app. Every key is optional.
 | `audioDirectory` | `"assets/audio"` | Folder holding your own sound files (env `AUDIO_DIR`) |
 | `wakaIntervalMs` | `200` | How often the eating-a-dot sound repeats during a run |
 | `countdownSeconds` | `3` | Length of the 3·2·1 countdown |
-| `powerModeSeconds` | `10` | How long POWER MODE lasts before normal play resumes by itself |
+| `runSeconds` | `30` | Starting run length; `0` = no limit (then use Manage scores → Run timer) |
+| `powerPelletSeconds` | `10` | Starting power-pellet time: power-mode length, and the time a pellet adds |
+| `maxPellets` | `2` | Starting cap on how many pellets add time to one run |
+| `idleMusicEnabled` · `idleMusicVolume` | `true` · `35` | Starting state of the background music between runs |
 | `adminPin` | `""` | Staff PIN; empty = no PIN (env `ADMIN_PIN`) |
 | `maxScore` | `999` | Highest Pac-Dot count accepted |
 | `maxTimeSeconds` | `3600` | Longest completion time accepted |

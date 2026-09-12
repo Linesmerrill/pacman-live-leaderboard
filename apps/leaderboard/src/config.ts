@@ -36,8 +36,16 @@ export interface AppConfig {
   wakaIntervalMs: number;
   /** Length of the 3·2·1 countdown before a run starts. */
   countdownSeconds: number;
-  /** How long POWER MODE lasts before the TV drops back to normal play by itself. */
-  powerModeSeconds: number;
+  /** Initial run length in seconds before the maze finishes by itself; 0 = no limit. */
+  runSeconds: number;
+  /** Initial power-pellet time: how long POWER MODE lasts, and how much time a pellet adds. */
+  powerPelletSeconds: number;
+  /** Initial cap on how many pellets can extend one run's clock. */
+  maxPellets: number;
+  /** Initial state of the soft background music that plays between runs. */
+  idleMusicEnabled: boolean;
+  /** Initial volume (0–100) of that background music, relative to the TV volume. */
+  idleMusicVolume: number;
   /** Optional PIN required by staff screens. Empty string = no PIN. */
   adminPin: string;
   /** Highest Pac-Dot count staff can enter. */
@@ -63,7 +71,11 @@ export const DEFAULT_CONFIG: Readonly<AppConfig> = Object.freeze({
   audioDirectory: 'assets/audio',
   wakaIntervalMs: 200,
   countdownSeconds: 3,
-  powerModeSeconds: 10,
+  runSeconds: 30,
+  powerPelletSeconds: 10,
+  maxPellets: 2,
+  idleMusicEnabled: true,
+  idleMusicVolume: 35,
   adminPin: '',
   maxScore: 999,
   maxTimeSeconds: 3600,
@@ -122,14 +134,17 @@ export function loadConfig(options: { file?: string; env?: NodeJS.ProcessEnv; ro
     (config as unknown as Record<string, unknown>)[k] = value;
   }
 
-  for (const k of ['port', 'leaderboardSize', 'boardColumns', 'pageSeconds', 'spotlightSeconds', 'maxScore', 'maxTimeSeconds', 'duplicateWarningSeconds', 'soundVolume', 'countdownSeconds', 'powerModeSeconds', 'wakaIntervalMs'] as const) {
+  for (const k of ['port', 'leaderboardSize', 'boardColumns', 'pageSeconds', 'spotlightSeconds', 'maxScore', 'maxTimeSeconds', 'duplicateWarningSeconds', 'soundVolume', 'countdownSeconds', 'runSeconds', 'powerPelletSeconds', 'maxPellets', 'idleMusicVolume', 'wakaIntervalMs'] as const) {
     if (!Number.isInteger(config[k]) || config[k] < 0) throw new Error(`config: "${k}" must be a whole number ≥ 0`);
   }
   if (config.leaderboardSize < 3 || config.leaderboardSize > 20) throw new Error('config: "leaderboardSize" must be 3–20');
   if (config.boardColumns < 1 || config.boardColumns > 4) throw new Error('config: "boardColumns" must be 1–4');
   if (config.pageSeconds < 3) throw new Error('config: "pageSeconds" must be at least 3');
   if (config.soundVolume > 100) throw new Error('config: "soundVolume" must be 0–100');
-  if (config.powerModeSeconds < 1 || config.powerModeSeconds > 120) throw new Error('config: "powerModeSeconds" must be 1–120');
+  if (config.powerPelletSeconds < 1 || config.powerPelletSeconds > 120) throw new Error('config: "powerPelletSeconds" must be 1–120');
+  if (config.runSeconds > 3600) throw new Error('config: "runSeconds" must be 0–3600 (0 = no time limit)');
+  if (config.maxPellets > 20) throw new Error('config: "maxPellets" must be 0–20');
+  if (config.idleMusicVolume > 100) throw new Error('config: "idleMusicVolume" must be 0–100');
   if (config.wakaIntervalMs < 60 || config.wakaIntervalMs > 2000) throw new Error('config: "wakaIntervalMs" must be 60–2000');
 
   if (config.databaseFile !== ':memory:') config.databaseFile = path.resolve(root, config.databaseFile);

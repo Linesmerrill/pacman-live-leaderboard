@@ -62,6 +62,41 @@
         </label>
       </section>
 
+      <section class="card" aria-labelledby="run-title">
+        <h2 id="run-title">Run timer</h2>
+        <p class="muted">How long a maze session lasts before the TV finishes it automatically. One clock covers everyone in the maze at once.</p>
+        <label class="field-label stacked">
+          Run length (seconds) <span class="hint">0 = no time limit</span>
+          <input id="run-seconds" class="text-input" type="number" min="0" max="3600" step="1">
+        </label>
+        <label class="field-label stacked">
+          Power pellet (seconds) <span class="hint">how long power mode lasts, and how much time a pellet adds</span>
+          <input id="pellet-seconds" class="text-input" type="number" min="1" max="120" step="1">
+        </label>
+        <label class="field-label stacked">
+          Pellets that add time <span class="hint">per run — extra pellets still light up the maze, they just stop adding time</span>
+          <input id="max-pellets" class="text-input" type="number" min="0" max="20" step="1">
+        </label>
+        <div class="inline-actions">
+          <button type="button" class="btn" id="run-save">Save run timer</button>
+          <span class="muted" id="run-msg" role="status"></span>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="idle-title">
+        <h2 id="idle-title">Background music</h2>
+        <p class="muted">A soft tune that plays on the TV between runs, and ducks under every sound effect. It stops while a run is under way.</p>
+        <label class="switch">
+          <input type="checkbox" id="idle-toggle" role="switch">
+          <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+          <span class="switch-label" id="idle-toggle-label">On</span>
+        </label>
+        <label class="field-label stacked" style="margin-top: 16px">
+          Volume <span class="hint" id="idle-volume-label">35%</span>
+          <input id="idle-volume" type="range" min="0" max="100" step="5">
+        </label>
+      </section>
+
       <section class="card" aria-labelledby="sound-title">
         <h2 id="sound-title">Sound effects</h2>
         <p class="muted">Arcade blips on the TV: a rising jingle for each new score, a bigger one for the top 10 and the podium, and a fanfare for a new high score. The TV also has a speaker button next to <strong>+ ADD PLAYER</strong>.</p>

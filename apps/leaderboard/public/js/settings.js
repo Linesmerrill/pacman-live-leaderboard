@@ -16,6 +16,15 @@ const els = {
   timeToggleLabel: $('time-toggle-label'),
   soundToggle: $('sound-toggle'),
   soundToggleLabel: $('sound-toggle-label'),
+  runSeconds: $('run-seconds'),
+  pelletSeconds: $('pellet-seconds'),
+  maxPellets: $('max-pellets'),
+  runSave: $('run-save'),
+  runMsg: $('run-msg'),
+  idleToggle: $('idle-toggle'),
+  idleToggleLabel: $('idle-toggle-label'),
+  idleVolume: $('idle-volume'),
+  idleVolumeLabel: $('idle-volume-label'),
   builtinCount: $('builtin-count'),
   deny: $('deny'),
   denySave: $('deny-save'),
@@ -133,6 +142,15 @@ function renderSettings() {
   els.timeToggleLabel.textContent = completionTimeEnabled ? 'On — TIME column shown' : 'Off — ranked by Pac-Dots only';
   els.soundToggle.checked = soundEnabled;
   els.soundToggleLabel.textContent = soundEnabled ? 'On — the TV plays arcade sounds' : 'Off — the TV is silent';
+
+  const { runSeconds, powerPelletSeconds, maxPellets, idleMusicEnabled, idleMusicVolume } = state.settings;
+  if (document.activeElement !== els.runSeconds) els.runSeconds.value = String(runSeconds);
+  if (document.activeElement !== els.pelletSeconds) els.pelletSeconds.value = String(powerPelletSeconds);
+  if (document.activeElement !== els.maxPellets) els.maxPellets.value = String(maxPellets);
+  els.idleToggle.checked = idleMusicEnabled;
+  els.idleToggleLabel.textContent = idleMusicEnabled ? 'On — plays between runs' : 'Off — silence between runs';
+  if (document.activeElement !== els.idleVolume) els.idleVolume.value = String(idleMusicVolume);
+  els.idleVolumeLabel.textContent = `${idleMusicVolume}%`;
   els.builtinCount.textContent = String(builtInDenyListSize);
   if (!state.denyDirty && document.activeElement !== els.deny) els.deny.value = customDenyList.join(' ');
 }
@@ -163,6 +181,40 @@ els.soundToggle.addEventListener('change', async () => {
   }
   renderSettings();
 });
+
+els.runSave.addEventListener('click', async () => {
+  const patch = {
+    runSeconds: Number(els.runSeconds.value),
+    powerPelletSeconds: Number(els.pelletSeconds.value),
+    maxPellets: Number(els.maxPellets.value),
+  };
+  try {
+    const { settings } = await api('PUT', '/api/settings', patch);
+    state.settings = settings;
+    const limit = settings.runSeconds === 0 ? 'no time limit' : `${settings.runSeconds}s runs`;
+    const most = settings.runSeconds === 0 ? '' : `, up to ${settings.runSeconds + settings.powerPelletSeconds * settings.maxPellets}s with pellets`;
+    els.runMsg.textContent = `Saved: ${limit}${most}.`;
+    renderSettings();
+  } catch (err) {
+    els.runMsg.textContent = err.message;
+  }
+});
+
+els.idleToggle.addEventListener('change', () => void saveIdleMusic({ idleMusicEnabled: els.idleToggle.checked }));
+els.idleVolume.addEventListener('input', () => {
+  els.idleVolumeLabel.textContent = `${els.idleVolume.value}%`;
+});
+els.idleVolume.addEventListener('change', () => void saveIdleMusic({ idleMusicVolume: Number(els.idleVolume.value) }));
+
+async function saveIdleMusic(patch) {
+  try {
+    const { settings } = await api('PUT', '/api/settings', patch);
+    state.settings = settings;
+  } catch (err) {
+    toast(err.message, { tone: 'error' });
+  }
+  renderSettings();
+}
 
 els.deny.addEventListener('input', () => {
   state.denyDirty = true;

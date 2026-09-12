@@ -1,5 +1,6 @@
 import {
   phaseEnded,
+  runEnded,
   transition,
   type Cue,
   type GameCommand,
@@ -9,9 +10,19 @@ import {
   type Transition,
 } from '../../../packages/shared/game-events.ts';
 
-export interface GameEngineOptions {
+export interface GameTiming {
   countdownSeconds: number;
-  powerModeSeconds: number;
+  /** How long power mode lasts, and how much time a pellet adds to the run. */
+  powerPelletSeconds: number;
+  /** Run length before the maze finishes by itself; 0 = no limit. */
+  runSeconds: number;
+  /** How many pellets can extend one run's clock. */
+  maxPellets: number;
+}
+
+export interface GameEngineOptions {
+  /** Read live: staff can change the run length or pellet time mid-event. */
+  getTiming: () => GameTiming;
   /** Volume and mute live in the saved settings so they survive a restart. */
   getSound: () => { soundEnabled: boolean; volume: number };
   setSound: (patch: { soundEnabled?: boolean; volume?: number }) => void;
@@ -22,19 +33,25 @@ export interface GameEngineOptions {
 const VOLUME_STEP = 10;
 
 /**
- * Runs the show: one authoritative game state for every screen, with the timed phases
- * (3·2·1 countdown, power mode) handled here so an operator can never leave the TV
- * stuck in the wrong mode or have to press buttons in the right order.
+ * Runs the show: one authoritative game state for every screen.
+ *
+ * Two clocks run during a maze session. The *phase* clock handles the 3·2·1 countdown and how long
+ * power mode lasts. The *run* clock is the session's time limit — it keeps ticking through power
+ * mode, and a power pellet adds time to it (up to `maxPellets` times), so a pellet grabbed at the
+ * last second buys exactly one more pellet's worth of maze and no more.
  */
 export class GameEngine {
   readonly #options: GameEngineOptions;
   #state: GameState = 'idle';
-  #loop: MusicLoop = 'none';
+  #loop: MusicLoop = 'idle';
   #cue: { name: Cue; id: number } | null = null;
   #cueCount = 0;
   #phaseEndsAt: number | null = null;
   #startedAt: number | null = null;
-  #timer: NodeJS.Timeout | null = null;
+  #runEndsAt: number | null = null;
+  #pelletsUsed = 0;
+  #phaseTimer: NodeJS.Timeout | null = null;
+  #runTimer: NodeJS.Timeout | null = null;
 
   constructor(options: GameEngineOptions) {
     this.#options = options;
@@ -48,6 +65,9 @@ export class GameEngine {
       cue: this.#cue,
       phaseEndsAt: this.#phaseEndsAt,
       startedAt: this.#startedAt,
+      runEndsAt: this.#runEndsAt,
+      pelletsUsed: this.#pelletsUsed,
+      maxPellets: this.#options.getTiming().maxPellets,
       volume,
       soundEnabled,
       updatedAt: Date.now(),
@@ -70,10 +90,8 @@ export class GameEngine {
       return { applied: true, status: this.status };
     }
 
-    const next = transition(this.#state, command, {
-      countdownSeconds: this.#options.countdownSeconds,
-      powerModeSeconds: this.#options.powerModeSeconds,
-    }, this.#loop);
+    const timing = this.#options.getTiming();
+    const next = transition(this.#state, command, timing, this.#loop);
     if (!next) return { applied: false, status: this.status };
 
     this.#apply(next, command);
@@ -81,29 +99,62 @@ export class GameEngine {
   }
 
   #apply(next: Transition, reason: string): void {
-    clearTimeout(this.#timer ?? undefined);
-    this.#timer = null;
+    clearTimeout(this.#phaseTimer ?? undefined);
+    this.#phaseTimer = null;
 
     this.#state = next.state;
     this.#loop = next.loop;
     if (next.cue) this.#cue = { name: next.cue, id: ++this.#cueCount };
-    if (next.startsRun) this.#startedAt = Date.now();
-    if (next.clearsRun) this.#startedAt = null;
+
+    if (next.startsRun) {
+      this.#startedAt = Date.now();
+      this.#pelletsUsed = 0;
+      this.#setRunDeadline(next.runSeconds ? Date.now() + next.runSeconds * 1000 : null);
+    }
+    if (next.clearsRun) {
+      this.#startedAt = null;
+      this.#setRunDeadline(null);
+      this.#pelletsUsed = 0;
+    }
+
+    // A power pellet adds time — but only while there's a clock, and only so many times, or one
+    // maze session could run all night while everyone else waits.
+    let extension = '';
+    if (next.extendRunSeconds && this.#runEndsAt !== null) {
+      const { maxPellets } = this.#options.getTiming();
+      if (this.#pelletsUsed < maxPellets) {
+        this.#pelletsUsed++;
+        this.#setRunDeadline(this.#runEndsAt + next.extendRunSeconds * 1000);
+        extension = ` (+${next.extendRunSeconds}s, pellet ${this.#pelletsUsed}/${maxPellets})`;
+      } else {
+        extension = ` (no extra time: ${maxPellets} pellet limit reached)`;
+      }
+    }
 
     if (next.phaseSeconds) {
       this.#phaseEndsAt = Date.now() + next.phaseSeconds * 1000;
-      this.#timer = setTimeout(() => this.#endPhase(), next.phaseSeconds * 1000);
-      this.#timer.unref?.();
+      this.#phaseTimer = setTimeout(() => this.#endPhase(), next.phaseSeconds * 1000);
+      this.#phaseTimer.unref?.();
     } else {
       this.#phaseEndsAt = null;
     }
 
-    this.#announce(`${reason} → ${this.#state}${this.#loop === 'none' ? '' : ` (${this.#loop} loop)`}`);
+    this.#announce(`${reason} → ${this.#state}${this.#loop === 'none' ? '' : ` (${this.#loop} loop)`}${extension}`);
   }
 
-  /** A timed phase ran out: countdown becomes the run starting, power mode drops back to normal play. */
+  /** Arms (or clears) the run's own auto-finish. */
+  #setRunDeadline(at: number | null): void {
+    clearTimeout(this.#runTimer ?? undefined);
+    this.#runTimer = null;
+    this.#runEndsAt = at;
+    if (at === null) return;
+    this.#runTimer = setTimeout(() => this.#apply(runEnded(), 'time up'), Math.max(0, at - Date.now()));
+    this.#runTimer.unref?.();
+  }
+
+  /** A timed phase ran out: the countdown starts the run, power mode drops back to normal play. */
   #endPhase(): void {
-    const next = phaseEnded(this.#state);
+    const next = phaseEnded(this.#state, this.#options.getTiming());
     if (next) this.#apply(next, 'timer');
   }
 
@@ -113,7 +164,9 @@ export class GameEngine {
   }
 
   close(): void {
-    clearTimeout(this.#timer ?? undefined);
-    this.#timer = null;
+    clearTimeout(this.#phaseTimer ?? undefined);
+    clearTimeout(this.#runTimer ?? undefined);
+    this.#phaseTimer = null;
+    this.#runTimer = null;
   }
 }

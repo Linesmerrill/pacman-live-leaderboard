@@ -27,11 +27,11 @@ export const GAME_STATES = ['idle', 'ready', 'countdown', 'playing', 'power-mode
 export type GameState = (typeof GAME_STATES)[number];
 
 /** One-shot sounds (and matching on-screen moments) the TV plays. */
-export const CUES = ['intro', 'countdown', 'go', 'power-up', 'power-end', 'ghost-tag', 'fruit', 'pac-dot', 'finish', 'high-score', 'stop'] as const;
+export const CUES = ['intro', 'countdown', 'go', 'power-up', 'power-end', 'ghost-tag', 'fruit', 'pac-dot', 'finish', 'high-score', 'intermission', 'stop'] as const;
 export type Cue = (typeof CUES)[number];
 
 /** Background music the TV loops while a run is under way. */
-export const MUSIC_LOOPS = ['none', 'gameplay', 'power'] as const;
+export const MUSIC_LOOPS = ['none', 'idle', 'gameplay', 'power'] as const;
 export type MusicLoop = (typeof MUSIC_LOOPS)[number];
 
 export interface GameStatus {
@@ -43,6 +43,12 @@ export interface GameStatus {
   phaseEndsAt: number | null;
   /** Epoch ms when the current run started playing, else null. */
   startedAt: number | null;
+  /** Epoch ms when the run ends by itself, else null (no time limit set). */
+  runEndsAt: number | null;
+  /** Power pellets that have already bought extra time this run. */
+  pelletsUsed: number;
+  /** How many pellets can extend the clock before the rest are just sound and lights. */
+  maxPellets: number;
   /** Master volume for the TV, 0–100. */
   volume: number;
   soundEnabled: boolean;
@@ -55,15 +61,21 @@ export interface Transition {
   cue?: Cue;
   /** Seconds until the phase ends on its own (countdown → start, power mode → playing). */
   phaseSeconds?: number;
-  /** Starts the run clock. */
+  /** Starts the run clock, with this many seconds on it (0 = no time limit). */
   startsRun?: boolean;
+  runSeconds?: number;
+  /** A power pellet adds this much time to the run that's already under way. */
+  extendRunSeconds?: number;
   /** Clears the run clock. */
   clearsRun?: boolean;
 }
 
 export interface TransitionOptions {
   countdownSeconds: number;
-  powerModeSeconds: number;
+  /** How long power mode lasts — and how much time a pellet adds to the run. */
+  powerPelletSeconds: number;
+  /** Length of a run before it finishes by itself; 0 means no limit. */
+  runSeconds: number;
 }
 
 /** Commands that only fire a sound; they never change the state. */
@@ -89,31 +101,42 @@ export function transition(state: GameState, command: GameCommand, options: Tran
 
   switch (command) {
     case 'ready':
-      return { state: 'ready', loop: 'none', cue: 'intro', clearsRun: true };
+      return { state: 'ready', loop: 'idle', cue: 'intro', clearsRun: true };
     case 'countdown':
       return { state: 'countdown', loop: 'none', cue: 'countdown', phaseSeconds: options.countdownSeconds, clearsRun: true };
     case 'start':
-      return { state: 'playing', loop: 'gameplay', cue: 'go', startsRun: true };
+      return { state: 'playing', loop: 'gameplay', cue: 'go', startsRun: true, runSeconds: options.runSeconds };
     case 'power-up':
       if (state !== 'playing' && state !== 'power-mode') return null;
-      return { state: 'power-mode', loop: 'power', cue: 'power-up', phaseSeconds: options.powerModeSeconds };
+      return {
+        state: 'power-mode',
+        loop: 'power',
+        cue: 'power-up',
+        phaseSeconds: options.powerPelletSeconds,
+        extendRunSeconds: options.powerPelletSeconds,
+      };
     case 'finish':
       if (state === 'idle' || state === 'finished') return null;
-      return { state: 'finished', loop: 'none', cue: 'finish' };
+      return { state: 'finished', loop: 'idle', cue: 'finish', clearsRun: true };
     case 'stop-all':
       return { state, loop: 'none', cue: 'stop' };
     case 'reset':
-      return { state: 'idle', loop: 'none', clearsRun: true };
+      return { state: 'idle', loop: 'idle', cue: 'intermission', clearsRun: true };
     default:
       return null;
   }
 }
 
 /** What happens when a timed phase runs out on its own. */
-export function phaseEnded(state: GameState): Transition | null {
-  if (state === 'countdown') return { state: 'playing', loop: 'gameplay', cue: 'go', startsRun: true };
+export function phaseEnded(state: GameState, options: TransitionOptions): Transition | null {
+  if (state === 'countdown') return { state: 'playing', loop: 'gameplay', cue: 'go', startsRun: true, runSeconds: options.runSeconds };
   if (state === 'power-mode') return { state: 'playing', loop: 'gameplay', cue: 'power-end' };
   return null;
+}
+
+/** The run's own clock ran out: finish, whatever else was happening. */
+export function runEnded(): Transition {
+  return { state: 'finished', loop: 'idle', cue: 'finish', clearsRun: true };
 }
 
 /** Labels for controller keys. */

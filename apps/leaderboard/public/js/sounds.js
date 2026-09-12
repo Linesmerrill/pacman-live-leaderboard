@@ -115,6 +115,26 @@ export const LOOPS = {
     lead: [440, null, 523, null, 659, null, 523, null, 587, null, 494, null, 440, null, 392, null],
     bass: [110, null, null, null, 131, null, null, null, 98, null, null, null, 110, null, 123, null],
   },
+  // Between runs: soft, slow, major-pentatonic. Meant to sit under conversation, not lead it.
+  idle: {
+    stepSeconds: 0.25,
+    leadType: 'triangle',
+    bassType: 'sine',
+    leadGain: 0.3,
+    bassGain: 0.5,
+    lead: [
+      659, null, 784, null, 880, null, 784, null,
+      659, null, 587, null, 659, null, null, null,
+      880, null, 988, null, 1175, null, 988, null,
+      880, null, 784, null, 659, null, null, null,
+    ],
+    bass: [
+      220, null, null, null, 165, null, null, null,
+      196, null, null, null, 147, null, null, null,
+      220, null, null, null, 165, null, null, null,
+      247, null, null, null, 196, null, null, null,
+    ],
+  },
   // Faster and tenser while the power pellet is active.
   power: {
     stepSeconds: 0.09,
@@ -140,6 +160,9 @@ let audio = null;
 let master = null;
 let enabled = true;
 let volume = 80;
+let idleEnabled = true;
+let idleVolume = 35;
+let idleGain = null;
 const loop = { name: 'none', timer: null, step: 0, nextTime: 0 };
 
 // ---------- Your own sound files (assets/audio) ----------
@@ -202,6 +225,11 @@ function ensureContext() {
   master = audio.createGain();
   master.gain.value = masterGain();
   master.connect(audio.destination);
+  // The background music runs through its own gain so it can be softer than the effects,
+  // or muted on its own, without touching anything else.
+  idleGain = audio.createGain();
+  idleGain.gain.value = idleMusicGain();
+  idleGain.connect(master);
   return audio;
 }
 
@@ -234,6 +262,18 @@ export function setVolume(next) {
   if (master) master.gain.value = masterGain();
 }
 
+function idleMusicGain() {
+  return idleEnabled ? idleVolume / 100 : 0;
+}
+
+/** The background music between runs: its own on/off and volume, under the TV volume. */
+export function setIdleMusic({ enabled, volume: level }) {
+  if (enabled !== undefined) idleEnabled = Boolean(enabled);
+  if (level !== undefined) idleVolume = Math.max(0, Math.min(100, Number(level) || 0));
+  if (idleGain) idleGain.gain.value = idleMusicGain();
+  if (!idleEnabled && loop.name === 'idle') stopLoop();
+}
+
 export function getVolume() {
   return volume;
 }
@@ -243,7 +283,7 @@ export function isSoundEnabled() {
 }
 
 /** Schedule one note at an absolute context time. */
-function scheduleNote(ctx, { freq, at, dur, type = 'square', to = null, gain = 1 }) {
+function scheduleNote(ctx, { freq, at, dur, type = 'square', to = null, gain = 1, destination = null }) {
   const osc = ctx.createOscillator();
   const envelope = ctx.createGain();
   osc.type = type;
@@ -254,17 +294,37 @@ function scheduleNote(ctx, { freq, at, dur, type = 'square', to = null, gain = 1
   envelope.gain.linearRampToValueAtTime(gain, at + 0.008);
   envelope.gain.setValueAtTime(gain, at + dur * 0.7);
   envelope.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-  osc.connect(envelope).connect(master);
+  osc.connect(envelope).connect(destination ?? master);
   osc.start(at);
   osc.stop(at + dur + 0.03);
+}
+
+/** Dip the background music while a cue plays, so effects always cut through. */
+function duckIdle(seconds) {
+  if (!idleGain || loop.name !== 'idle') return;
+  const ctx = ensureContext();
+  const full = idleMusicGain();
+  const now = ctx.currentTime;
+  idleGain.gain.cancelScheduledValues(now);
+  idleGain.gain.setValueAtTime(idleGain.gain.value, now);
+  idleGain.gain.linearRampToValueAtTime(full * 0.25, now + 0.08);
+  idleGain.gain.setValueAtTime(full * 0.25, now + Math.max(0.1, seconds));
+  idleGain.gain.linearRampToValueAtTime(full, now + Math.max(0.1, seconds) + 0.5);
 }
 
 /** Play one of the SFX above. Silently does nothing when sound is off or unavailable. */
 export function play(name, { delay = 0 } = {}) {
   if (!enabled) return;
-  if (delay === 0 && playFile(name)) return; // the event's own recording wins
+  if (delay === 0) {
+    const source = playFile(name);
+    if (source) {
+      duckIdle(source.buffer.duration);
+      return; // the event's own recording wins
+    }
+  }
   const notes = SFX[name];
   if (!notes) return;
+  duckIdle(totalDuration(notes));
   const ctx = ensureContext();
   if (!ctx) return;
   if (ctx.state === 'suspended') void ctx.resume();
@@ -284,8 +344,13 @@ function scheduleLoopSteps() {
     const at = Math.max(loop.nextTime, ctx.currentTime + 0.02);
     const lead = pattern.lead[loop.step];
     const bass = pattern.bass[loop.step];
-    if (lead) scheduleNote(ctx, { freq: lead, at, dur: pattern.stepSeconds * 0.85, gain: 0.32 });
-    if (bass) scheduleNote(ctx, { freq: bass, at, dur: pattern.stepSeconds * 0.9, type: 'triangle', gain: 0.4 });
+    const destination = loop.name === 'idle' ? idleGain : master;
+    if (lead) {
+      scheduleNote(ctx, { freq: lead, at, dur: pattern.stepSeconds * (loop.name === 'idle' ? 1.6 : 0.85), type: pattern.leadType ?? 'square', gain: pattern.leadGain ?? 0.32, destination });
+    }
+    if (bass) {
+      scheduleNote(ctx, { freq: bass, at, dur: pattern.stepSeconds * (loop.name === 'idle' ? 2.4 : 0.9), type: pattern.bassType ?? 'triangle', gain: pattern.bassGain ?? 0.4, destination });
+    }
     loop.nextTime += pattern.stepSeconds;
     loop.step = (loop.step + 1) % pattern.lead.length;
   }
@@ -319,6 +384,19 @@ export function setLoop(name) {
     return;
   }
   if (ctx.state === 'suspended') void ctx.resume();
+
+  if (next === 'idle') {
+    if (!idleEnabled) {
+      loop.name = 'none';
+      return;
+    }
+    idleGain.gain.value = idleMusicGain();
+    loop.step = 0;
+    loop.nextTime = ctx.currentTime + 0.05;
+    scheduleLoopSteps();
+    loop.timer = setInterval(scheduleLoopSteps, 60);
+    return;
+  }
 
   const trackName = next === 'gameplay' ? 'gameplay-loop' : 'power-loop';
   if (files.has(trackName)) {

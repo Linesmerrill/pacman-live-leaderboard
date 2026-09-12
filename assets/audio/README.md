@@ -12,7 +12,8 @@ The file name is the cue name. `.wav`, `.mp3`, `.ogg`, `.m4a` and `.aac` all wor
 | `go.wav` | **Game start** — the run begins (after the 3·2·1 countdown, or on START) |
 | `power-up.wav` | **Power pellet** — POWER UP pressed |
 | `pac-dot.wav` | **Eating a dot** — also repeated over and over while the run is playing |
-| `finish.wav` | **Game over** — FINISH pressed |
+| `finish.wav` | **Game over** — FINISH pressed, or the run timer running out |
+| `intermission.wav` | Between runs — RESET pressed |
 | `intro.wav` | READY |
 | `countdown.wav` | The 3·2·1 countdown starts |
 | `power-end.wav` | Power mode runs out |

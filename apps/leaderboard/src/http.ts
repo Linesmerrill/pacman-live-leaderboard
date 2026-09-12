@@ -113,8 +113,15 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
   if (audioCount > 0) log(`* using ${audioCount} sound file(s) from ${audioDir}`);
 
   const game = new GameEngine({
-    countdownSeconds: service.config.countdownSeconds,
-    powerModeSeconds: service.config.powerModeSeconds,
+    getTiming: () => {
+      const settings = service.getSettings();
+      return {
+        countdownSeconds: service.config.countdownSeconds,
+        runSeconds: settings.runSeconds,
+        powerPelletSeconds: settings.powerPelletSeconds,
+        maxPellets: settings.maxPellets,
+      };
+    },
     getSound: () => {
       const settings = service.getSettings();
       return { soundEnabled: settings.soundEnabled, volume: settings.soundVolume };

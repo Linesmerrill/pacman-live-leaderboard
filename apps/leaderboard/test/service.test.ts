@@ -34,7 +34,16 @@ describe('LeaderboardService', () => {
     assert.equal(snap.totalPlayers, 5);
     assert.equal(snap.latest?.initials, 'P04');
     assert.equal(snap.latest?.rank, 4);
-    assert.deepEqual(snap.display, { soundEnabled: true, soundVolume: 80, rowsPerColumn: 3, columns: 2, pageSeconds: 7, spotlightSeconds: 15 });
+    assert.deepEqual(snap.display, {
+      soundEnabled: true,
+      soundVolume: 80,
+      idleMusicEnabled: true,
+      idleMusicVolume: 35,
+      rowsPerColumn: 3,
+      columns: 2,
+      pageSeconds: 7,
+      spotlightSeconds: 15,
+    });
   });
 
   test('flags new high scores only when #1 is beaten outright', () => {
@@ -111,6 +120,30 @@ describe('LeaderboardService', () => {
     assert.equal(fixture.service.getSettings().soundEnabled, false);
     assert.equal(fixture.service.snapshot().display.soundEnabled, false);
     assert.throws(() => fixture.service.updateSettings({ soundEnabled: 'off' }), TypeError);
+  });
+
+  test('run timing and idle music are saved settings staff can change mid-event', () => {
+    fixture = makeFixture({ runSeconds: 30, powerPelletSeconds: 10, maxPellets: 2 });
+    const initial = fixture.service.getSettings();
+    assert.equal(initial.runSeconds, 30);
+    assert.equal(initial.powerPelletSeconds, 10);
+    assert.equal(initial.maxPellets, 2);
+    assert.equal(initial.idleMusicEnabled, true);
+
+    fixture.service.updateSettings({ runSeconds: 45, powerPelletSeconds: 8, maxPellets: 1, idleMusicEnabled: false, idleMusicVolume: 20 });
+    fixture = fixture.reopen();
+    const saved = fixture.service.getSettings();
+    assert.equal(saved.runSeconds, 45);
+    assert.equal(saved.powerPelletSeconds, 8);
+    assert.equal(saved.maxPellets, 1);
+    assert.equal(saved.idleMusicEnabled, false);
+    assert.equal(saved.idleMusicVolume, 20);
+    assert.equal(fixture.service.snapshot().display.idleMusicVolume, 20);
+
+    assert.equal(fixture.service.updateSettings({ runSeconds: 0 }) && fixture.service.getSettings().runSeconds, 0, 'zero means no time limit');
+    for (const bad of [{ runSeconds: -1 }, { runSeconds: 4000 }, { powerPelletSeconds: 0 }, { maxPellets: 99 }, { idleMusicVolume: 101 }, { runSeconds: 'soon' }]) {
+      assert.throws(() => fixture.service.updateSettings(bad), TypeError, JSON.stringify(bad));
+    }
   });
 
   test('volume starts from config, persists, and rejects out-of-range values', () => {

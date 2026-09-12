@@ -462,3 +462,21 @@ body.hide-time .time-col {
     padding: 18px;
   }
 }
+
+/* Stacked label + control (run timer, background music volume) */
+.field-label.stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 1rem;
+}
+.field-label.stacked .hint {
+  text-transform: none;
+}
+.field-label.stacked input[type='range'] {
+  width: 100%;
+  accent-color: var(--yellow);
+}

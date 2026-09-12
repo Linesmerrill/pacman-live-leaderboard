@@ -6,7 +6,7 @@ import { formatTime, ordinal } from './format.js';
 import { connectLive } from './live.js';
 import { pageCount, pageForPosition, pageRange, splitColumns } from './paging.js';
 import { pixelText, pixelWidth } from './pixelfont.js';
-import { isSoundEnabled, loadAudioFiles, play, primeAudio, setLoop, setSoundEnabled, setVolume, soundForEntry } from './sounds.js';
+import { isSoundEnabled, loadAudioFiles, play, primeAudio, setIdleMusic, setLoop, setSoundEnabled, setVolume, soundForEntry } from './sounds.js';
 import { FRUIT_BY_RANK, GHOST_COLORS, ghost, pacman, scaredGhost, speaker } from './sprites.js';
 
 const FLASH_MS = 4_400; // matches the .fresh CSS animation (0.55s × 8)
@@ -409,6 +409,8 @@ function handleUpdate(message) {
   entryForm.setSettings(snapshot);
   applySoundSetting(snapshot.display.soundEnabled);
   setVolume(snapshot.display.soundVolume);
+  setIdleMusic({ enabled: snapshot.display.idleMusicEnabled, volume: snapshot.display.idleMusicVolume });
+  if (state.game) setLoop(state.game.loop); // picks the bed back up if it was just switched on
   applyGame(message.game);
   if (reason === 'game') {
     render();
@@ -486,9 +488,13 @@ function phaseSecondsLeft() {
   return Math.max(0, Math.ceil((state.game.phaseEndsAt - Date.now()) / 1000));
 }
 
+/** Time left when the run has a limit, otherwise how long it's been going. */
 function runClock() {
-  if (!state.game?.startedAt) return '';
-  const seconds = Math.max(0, Math.floor((Date.now() - state.game.startedAt) / 1000));
+  const game = state.game;
+  if (!game?.startedAt) return '';
+  const seconds = game.runEndsAt
+    ? Math.max(0, Math.ceil((game.runEndsAt - Date.now()) / 1000))
+    : Math.max(0, Math.floor((Date.now() - game.startedAt) / 1000));
   return ` ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
@@ -503,7 +509,7 @@ function renderGameStatus() {
     ready: 'READY!',
     countdown: 'GET SET...',
     playing: `PLAYING${runClock()}`,
-    'power-mode': `POWER MODE ${phaseSecondsLeft()}`,
+    'power-mode': `POWER MODE ${phaseSecondsLeft()}${runClock()}`,
     finished: 'FINISH!',
   }[game.state];
   els.gameStatus.replaceChildren(pixelText(label));
