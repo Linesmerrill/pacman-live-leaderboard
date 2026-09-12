@@ -122,6 +122,14 @@ describe('LeaderboardService', () => {
     assert.throws(() => fixture.service.updateSettings({ soundEnabled: 'off' }), TypeError);
   });
 
+  test('ships with the run timing chosen for this event', () => {
+    fixture = makeFixture();
+    const { runSeconds, powerPelletSeconds, maxPellets } = fixture.service.getSettings();
+    assert.deepEqual({ runSeconds, powerPelletSeconds, maxPellets }, { runSeconds: 20, powerPelletSeconds: 10, maxPellets: 1 });
+    // Worst case for one maze session, so the queue keeps moving.
+    assert.equal(runSeconds + powerPelletSeconds * maxPellets, 30);
+  });
+
   test('run timing and idle music are saved settings staff can change mid-event', () => {
     fixture = makeFixture({ runSeconds: 30, powerPelletSeconds: 10, maxPellets: 2 });
     const initial = fixture.service.getSettings();

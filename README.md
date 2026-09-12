@@ -137,7 +137,7 @@ to a USB stick.
 
 ## Run timer
 
-A maze session has a time limit, set in **Manage scores → Run timer** (30 seconds by default).
+A maze session has a time limit, set in **Manage scores → Run timer** (20 seconds by default).
 START arms the clock and the TV counts it down; when it reaches zero the run **finishes by itself** —
 same as pressing FINISH.
 
@@ -145,13 +145,14 @@ same as pressing FINISH.
 running, so a pellet taken with 1 second left doesn't restart the run, it extends it:
 
 ```
-30s run, pellet grabbed at 0:29
-   └─ clock becomes 0:40, power mode runs 0:29 → 0:39
-      then normal play resumes for a second and the run finishes at 0:40
+20s run, pellet grabbed at 0:19
+   └─ clock becomes 0:30, power mode runs 0:19 → 0:29
+      then normal play resumes for a second and the run finishes at 0:30
 ```
 
-**Pellets stop paying out.** `Pellets that add time` (2 by default) caps how many pellets extend one
-session, so nobody can loop the maze forever while others queue. Beyond the cap, pellets still fire
+**Pellets stop paying out.** `Pellets that add time` (1 by default) caps how many pellets extend one
+session — so with the defaults, a session is 20 seconds and never more than 30, and nobody can loop
+the maze while others queue. Beyond the cap, pellets still fire
 the sound, the blue ghosts and the flashing walls for everyone — they just don't add time.
 
 One clock covers **everyone in the maze at once**, which is what you want when you run several kids
@@ -347,9 +348,9 @@ Edit `config.json` and restart the app. Every key is optional.
 | `audioDirectory` | `"assets/audio"` | Folder holding your own sound files (env `AUDIO_DIR`) |
 | `wakaIntervalMs` | `200` | How often the eating-a-dot sound repeats during a run |
 | `countdownSeconds` | `3` | Length of the 3·2·1 countdown |
-| `runSeconds` | `30` | Starting run length; `0` = no limit (then use Manage scores → Run timer) |
+| `runSeconds` | `20` | Starting run length; `0` = no limit (then use Manage scores → Run timer) |
 | `powerPelletSeconds` | `10` | Starting power-pellet time: power-mode length, and the time a pellet adds |
-| `maxPellets` | `2` | Starting cap on how many pellets add time to one run |
+| `maxPellets` | `1` | Starting cap on how many pellets add time to one run |
 | `idleMusicEnabled` · `idleMusicVolume` | `true` · `35` | Starting state of the background music between runs |
 | `adminPin` | `""` | Staff PIN; empty = no PIN (env `ADMIN_PIN`) |
 | `maxScore` | `999` | Highest Pac-Dot count accepted |
