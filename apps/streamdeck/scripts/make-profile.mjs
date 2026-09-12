@@ -93,8 +93,11 @@ for (const [index, command] of LAYOUT.entries()) {
 if (placed < LAYOUT.length) console.warn(`This deck has ${columns * rows} keys; the last ${LAYOUT.length - placed} were left out.`);
 
 // Stream Deck profiles are a folder of JSON: one page of keys, plus an empty default page.
+// The folder itself must be named for a UUID — the app rejects the import otherwise
+// ("umbrella has malformed uuid"). The readable name lives in the manifest.
 const work = mkdtempSync(path.join(tmpdir(), 'pacman-profile-'));
-const bundle = path.join(work, `${PROFILE_NAME}.sdProfile`);
+const bundleId = randomUUID().toUpperCase();
+const bundle = path.join(work, `${bundleId}.sdProfile`);
 const page = randomUUID().toUpperCase();
 const blank = randomUUID().toUpperCase();
 
@@ -120,7 +123,7 @@ writeFileSync(
 
 mkdirSync(path.dirname(OUT), { recursive: true });
 rmSync(OUT, { force: true });
-execFileSync('zip', ['-r', '-q', OUT, `${PROFILE_NAME}.sdProfile`], { cwd: work });
+execFileSync('zip', ['-r', '-q', OUT, `${bundleId}.sdProfile`], { cwd: work });
 rmSync(work, { recursive: true, force: true });
 
 console.log(`Built a ${placed}-key profile for your ${device.Model}:\n  ${OUT}`);
