@@ -12,7 +12,7 @@
   "soundEnabled": true,
   "soundVolume": 80,
   "audioDirectory": "assets/audio",
-  "wakaIntervalMs": 200,
+  "wakaIntervalMs": 150,
   "countdownSeconds": 3,
   "powerModeSeconds": 10,
   "adminPin": "",

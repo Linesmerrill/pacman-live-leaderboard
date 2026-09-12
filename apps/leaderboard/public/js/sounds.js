@@ -157,7 +157,11 @@ export async function loadAudioFiles(manifest, { wakaMs = 200 } = {}) {
   wakaIntervalMs = wakaMs;
   const ctx = ensureContext();
   if (!ctx || !manifest) return files;
-  const entries = [...Object.entries(manifest.cues ?? {}), ...Object.entries(manifest.loops ?? {})];
+  const entries = [
+    ...Object.entries(manifest.cues ?? {}),
+    ...Object.entries(manifest.alternates ?? {}).map(([name, url]) => [`${name}-2`, url]),
+    ...Object.entries(manifest.loops ?? {}),
+  ];
   await Promise.all(
     entries.map(async ([name, url]) => {
       try {
@@ -322,7 +326,10 @@ export function setLoop(name) {
     return;
   }
   if (next === 'gameplay' && files.has('pac-dot')) {
-    const chomp = () => playFile('pac-dot');
+    // Alternate the two chomps when a second take was supplied — that's what makes it "waka waka".
+    const takes = files.has('pac-dot-2') ? ['pac-dot', 'pac-dot-2'] : ['pac-dot'];
+    let index = 0;
+    const chomp = () => playFile(takes[index++ % takes.length]);
     chomp();
     waka.timer = setInterval(chomp, wakaIntervalMs);
     return;

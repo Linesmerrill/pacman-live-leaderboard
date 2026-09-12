@@ -9,7 +9,7 @@ let dir: string;
 
 before(() => {
   dir = mkdtempSync(path.join(tmpdir(), 'pacman-audio-'));
-  for (const name of ['go.wav', 'power-up.mp3', 'pac-dot.wav', 'finish.ogg', 'gameplay-loop.wav', 'notes.txt', 'random.wav', '.hidden.wav']) {
+  for (const name of ['go.wav', 'power-up.mp3', 'pac-dot.wav', 'pac-dot-2.wav', 'finish.ogg', 'gameplay-loop.wav', 'notes.txt', 'random.wav', '.hidden.wav']) {
     writeFileSync(path.join(dir, name), 'x');
   }
 });
@@ -25,10 +25,11 @@ describe('event audio folder', () => {
       finish: '/audio/finish.ogg',
     });
     assert.deepEqual(manifest.loops, { 'gameplay-loop': '/audio/gameplay-loop.wav' });
+    assert.deepEqual(manifest.alternates, { 'pac-dot': '/audio/pac-dot-2.wav' }, 'a second take alternates with the first');
   });
 
   test('an empty or missing folder just means the built-in sounds are used', () => {
-    assert.deepEqual(readAudioManifest(path.join(dir, 'nope')), { cues: {}, loops: {} });
+    assert.deepEqual(readAudioManifest(path.join(dir, 'nope')), { cues: {}, alternates: {}, loops: {} });
   });
 
   test('serves only real audio files from inside the folder', () => {

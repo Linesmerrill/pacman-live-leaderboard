@@ -19,6 +19,8 @@ const CONTENT_TYPES: Record<string, string> = {
 export interface AudioManifest {
   /** cue name → URL to play, for cues the operator supplied a file for. */
   cues: Partial<Record<Cue, string>>;
+  /** cue name → URL of a second take, e.g. `pac-dot-2.wav`; the waka alternates the two. */
+  alternates: Partial<Record<Cue, string>>;
   /** loop name → URL, for background tracks. */
   loops: Partial<Record<LoopName, string>>;
 }
@@ -35,17 +37,27 @@ export function contentTypeFor(file: string): string | null {
  * Read once at startup — drop files in, then restart.
  */
 export function readAudioManifest(directory: string): AudioManifest {
-  const manifest: AudioManifest = { cues: {}, loops: {} };
+  const manifest: AudioManifest = { cues: {}, alternates: {}, loops: {} };
   if (!existsSync(directory)) return manifest;
 
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     if (!entry.isFile()) continue;
     const extension = path.extname(entry.name).toLowerCase();
+    if (!CONTENT_TYPES[extension]) continue;
     const name = path.basename(entry.name, extension);
-    if (!CONTENT_TYPES[extension] || !NAMES.has(name)) continue;
     const url = `/audio/${encodeURIComponent(entry.name)}`;
-    if (LOOP_NAMES.includes(name as LoopName)) manifest.loops[name as LoopName] = url;
-    else manifest.cues[name as Cue] = url;
+
+    if (LOOP_NAMES.includes(name as LoopName)) {
+      manifest.loops[name as LoopName] = url;
+      continue;
+    }
+    if (NAMES.has(name)) {
+      manifest.cues[name as Cue] = url;
+      continue;
+    }
+    // A second take: `pac-dot-2.wav` alternates with `pac-dot.wav`, like the arcade's two chomps.
+    const alternate = /^(.+)-2$/.exec(name)?.[1];
+    if (alternate && NAMES.has(alternate)) manifest.alternates[alternate as Cue] = url;
   }
   return manifest;
 }

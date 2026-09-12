@@ -161,16 +161,18 @@ built-in blips. The file name is the cue name:
 | `go.wav` | **Game start** — the run begins (after the countdown, or on START) |
 | `power-up.wav` | **Power pellet** — POWER UP pressed |
 | `pac-dot.wav` | **Eating a dot** — and repeated over and over for the whole run |
+| `pac-dot-2.wav` | Optional second chomp; the run alternates the two, like the arcade |
 | `finish.wav` | **Game over** — FINISH pressed |
 
 `intro`, `countdown`, `power-end`, `ghost-tag`, `fruit`, `high-score` and `stop` work the same way, and
 `gameplay-loop` / `power-loop` replace the background music with a continuous track. `.wav`, `.mp3`,
 `.ogg`, `.m4a` and `.aac` all work. Anything you don't supply keeps its built-in sound, so the show
-always has audio.
+always has audio. A `power-loop` file plays continuously through POWER MODE, and a `gameplay-loop`
+file replaces the repeating dot sound for the whole run.
 
 Restart the app after adding files (the folder is read at startup) and check what it picked up at
 <http://localhost:3000/api/audio>. The repeat rate of the dot sound is `wakaIntervalMs` in
-`config.json` (200 ms by default) — keep that file short so it doesn't overlap itself.
+`config.json` (150 ms by default) — keep that file short so it doesn't overlap itself.
 
 **These are your files.** Pac-Man's audio belongs to Bandai Namco, so use recordings you have the
 right to use. The folder is git-ignored, so your sounds stay on the event Mac and this public

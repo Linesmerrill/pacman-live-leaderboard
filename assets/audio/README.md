@@ -21,6 +21,11 @@ The file name is the cue name. `.wav`, `.mp3`, `.ogg`, `.m4a` and `.aac` all wor
 | `high-score.wav` | A new high score (and the HIGH SCORE key) |
 | `stop.wav` | STOP ALL |
 
+### A second take for the chomp
+
+The arcade alternates two slightly different chomps. Add `pac-dot-2.wav` next to `pac-dot.wav` and the
+run alternates them — that's what makes it sound like "waka waka" instead of one repeated blip.
+
 Two optional background tracks, looped continuously:
 
 | File | Plays when |
@@ -28,7 +33,7 @@ Two optional background tracks, looped continuously:
 | `gameplay-loop.wav` | While a run is playing — replaces the repeated `pac-dot` waka |
 | `power-loop.wav` | While power mode is active |
 
-Short files work best: the dot sound repeats every `wakaIntervalMs` (200 ms by default, in
+Short files work best: the dot sound repeats every `wakaIntervalMs` (150 ms by default, in
 `config.json`), so anything longer than about a quarter of a second will overlap itself.
 
 ## After adding or changing files
