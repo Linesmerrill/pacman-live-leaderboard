@@ -173,6 +173,67 @@ ol {
   opacity: 0.8;
 }
 
+/* ---------- Game state (driven by the Stream Deck) ---------- */
+
+.game-status {
+  font-size: calc(var(--u) * 0.62);
+  color: var(--yellow);
+  filter: drop-shadow(0 0 0.7em rgba(255, 225, 53, 0.6));
+}
+body[data-game-state='power-mode'] .game-status {
+  color: var(--cyan);
+  filter: drop-shadow(0 0 0.7em rgba(60, 242, 255, 0.7));
+  animation: blink 0.45s steps(1, end) infinite;
+}
+body[data-game-state='ready'] .game-status,
+body[data-game-state='finished'] .game-status {
+  animation: blink 0.9s steps(1, end) infinite;
+}
+
+/* POWER MODE takes over the maze walls, like eating a power pellet. */
+body[data-game-state='power-mode'] {
+  --maze: #2f6bff;
+}
+body[data-game-state='power-mode'] .frame,
+body[data-game-state='power-mode'] .frame::before {
+  animation: power-walls 0.45s steps(1, end) infinite;
+}
+@keyframes power-walls {
+  50% { border-color: var(--white); box-shadow: 0 0 calc(var(--u) * 2.4) rgba(255, 255, 255, 0.7), inset 0 0 calc(var(--u) * 1.6) rgba(255, 255, 255, 0.45); }
+}
+
+/* Full-screen moment: READY!, 3·2·1, GO!, POWER MODE!, FINISH! */
+.game-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 12;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.72);
+  color: var(--yellow);
+  font-size: calc(var(--u) * 2.6);
+  filter: drop-shadow(0 0 0.5em rgba(255, 225, 53, 0.7));
+  animation: flash-in 0.25s ease-out both;
+}
+.game-flash.count {
+  font-size: calc(var(--u) * 9);
+  background: rgba(0, 0, 0, 0.82);
+}
+.game-flash.power {
+  color: var(--cyan);
+  filter: drop-shadow(0 0 0.5em rgba(60, 242, 255, 0.8));
+  animation: flash-in 0.25s ease-out both, blink 0.4s steps(1, end) infinite;
+}
+.game-flash.leaving {
+  animation: flash-out 0.35s ease-in both;
+}
+@keyframes flash-in {
+  from { opacity: 0; transform: scale(1.15); }
+}
+@keyframes flash-out {
+  to { opacity: 0; }
+}
+
 /* ---------- Board layout ---------- */
 
 .board {

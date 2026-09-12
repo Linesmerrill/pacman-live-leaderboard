@@ -52,11 +52,75 @@ export const SFX = {
     { freq: 440, start: 0, dur: 0.09, to: 180, gain: 0.8 },
     { freq: 200, start: 0.12, dur: 0.09, to: 460, gain: 0.8 },
   ],
+  // ---- game cues, named to match the shared Cue type ----
+  intro: [
+    { freq: 523, start: 0, dur: 0.1 },
+    { freq: 659, start: 0.1, dur: 0.1 },
+    { freq: 784, start: 0.2, dur: 0.1 },
+    { freq: 1047, start: 0.3, dur: 0.22 },
+    { freq: 131, start: 0, dur: 0.5, type: 'triangle', gain: 0.5 },
+  ],
+  countdown: [
+    { freq: 784, start: 0, dur: 0.12 },
+    { freq: 784, start: 1, dur: 0.12 },
+    { freq: 784, start: 2, dur: 0.12 },
+  ],
+  go: [
+    { freq: 1047, start: 0, dur: 0.1 },
+    { freq: 1568, start: 0.1, dur: 0.3 },
+    { freq: 262, start: 0, dur: 0.3, type: 'triangle', gain: 0.6 },
+  ],
+  'power-up': [
+    { freq: 220, start: 0, dur: 0.35, to: 1320, gain: 0.9 },
+    { freq: 660, start: 0.3, dur: 0.1 },
+    { freq: 880, start: 0.4, dur: 0.18 },
+  ],
+  'power-end': [
+    { freq: 880, start: 0, dur: 0.3, to: 220, gain: 0.8 },
+  ],
+  'ghost-tag': [
+    { freq: 1200, start: 0, dur: 0.08, to: 400 },
+    { freq: 400, start: 0.08, dur: 0.14, to: 1200 },
+  ],
+  fruit: [
+    { freq: 784, start: 0, dur: 0.07 },
+    { freq: 1047, start: 0.07, dur: 0.07 },
+    { freq: 1319, start: 0.14, dur: 0.16 },
+  ],
+  'pac-dot': [{ freq: 988, start: 0, dur: 0.05, gain: 0.8 }],
+  finish: [
+    { freq: 1047, start: 0, dur: 0.12 },
+    { freq: 784, start: 0.12, dur: 0.12 },
+    { freq: 659, start: 0.24, dur: 0.12 },
+    { freq: 523, start: 0.36, dur: 0.4 },
+    { freq: 131, start: 0.36, dur: 0.4, type: 'triangle', gain: 0.55 },
+  ],
+  stop: [{ freq: 300, start: 0, dur: 0.12, to: 120, gain: 0.7 }],
+
   // Entry panel opening.
   panelOpen: [
     { freq: 880, start: 0, dur: 0.045, gain: 0.7 },
     { freq: 1320, start: 0.045, dur: 0.07, gain: 0.7 },
   ],
+};
+
+// The high-score cue and the leaderboard fanfare are the same jingle.
+SFX['high-score'] = SFX.highScore;
+
+/** Sixteen-step background loops. `null` = a rest. Original patterns, one note per step. */
+export const LOOPS = {
+  // Bouncy minor ostinato for normal play.
+  gameplay: {
+    stepSeconds: 0.125,
+    lead: [440, null, 523, null, 659, null, 523, null, 587, null, 494, null, 440, null, 392, null],
+    bass: [110, null, null, null, 131, null, null, null, 98, null, null, null, 110, null, 123, null],
+  },
+  // Faster and tenser while the power pellet is active.
+  power: {
+    stepSeconds: 0.09,
+    lead: [659, 622, 587, 554, 523, 554, 587, 622, 659, 698, 740, 784, 740, 698, 659, 622],
+    bass: [165, null, 165, null, 147, null, 147, null, 131, null, 131, null, 147, null, 165, null],
+  },
 };
 
 /** Which effect fits a newly added run. Pure, so it's covered by the tests. */
@@ -75,6 +139,8 @@ export function totalDuration(notes) {
 let audio = null;
 let master = null;
 let enabled = true;
+let volume = 80;
+const loop = { name: 'none', timer: null, step: 0, nextTime: 0 };
 
 function ensureContext() {
   if (audio) return audio;
@@ -82,7 +148,7 @@ function ensureContext() {
   if (!Ctor) return null;
   audio = new Ctor();
   master = audio.createGain();
-  master.gain.value = MASTER_VOLUME;
+  master.gain.value = masterGain();
   master.connect(audio.destination);
   return audio;
 }
@@ -96,13 +162,46 @@ export function primeAudio() {
   if (ctx && ctx.state === 'suspended') void ctx.resume();
 }
 
+function masterGain() {
+  return enabled ? (MASTER_VOLUME * volume) / 100 : 0;
+}
+
 export function setSoundEnabled(on) {
   enabled = Boolean(on);
+  if (master) master.gain.value = masterGain();
   if (enabled) primeAudio();
+  else setLoop('none');
+}
+
+/** TV master volume, 0–100 (the Stream Deck's VOL +/− keys). */
+export function setVolume(next) {
+  volume = Math.max(0, Math.min(100, Number(next) || 0));
+  if (master) master.gain.value = masterGain();
+}
+
+export function getVolume() {
+  return volume;
 }
 
 export function isSoundEnabled() {
   return enabled;
+}
+
+/** Schedule one note at an absolute context time. */
+function scheduleNote(ctx, { freq, at, dur, type = 'square', to = null, gain = 1 }) {
+  const osc = ctx.createOscillator();
+  const envelope = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, at);
+  if (to !== null) osc.frequency.linearRampToValueAtTime(to, at + dur);
+  // Fade in and out so the square waves don't click.
+  envelope.gain.setValueAtTime(0.0001, at);
+  envelope.gain.linearRampToValueAtTime(gain, at + 0.008);
+  envelope.gain.setValueAtTime(gain, at + dur * 0.7);
+  envelope.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  osc.connect(envelope).connect(master);
+  osc.start(at);
+  osc.stop(at + dur + 0.03);
 }
 
 /** Play one of the SFX above. Silently does nothing when sound is off or unavailable. */
@@ -113,22 +212,49 @@ export function play(name, { delay = 0 } = {}) {
   const ctx = ensureContext();
   if (!ctx) return;
   if (ctx.state === 'suspended') void ctx.resume();
-
   const t0 = ctx.currentTime + delay + 0.01;
-  for (const { freq, start, dur, type = 'square', to = null, gain = 1 } of notes) {
-    const osc = ctx.createOscillator();
-    const envelope = ctx.createGain();
-    const at = t0 + start;
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, at);
-    if (to !== null) osc.frequency.linearRampToValueAtTime(to, at + dur);
-    // Fade in and out so the square waves don't click.
-    envelope.gain.setValueAtTime(0.0001, at);
-    envelope.gain.linearRampToValueAtTime(gain, at + 0.008);
-    envelope.gain.setValueAtTime(gain, at + dur * 0.7);
-    envelope.gain.exponentialRampToValueAtTime(0.0001, at + dur);
-    osc.connect(envelope).connect(master);
-    osc.start(at);
-    osc.stop(at + dur + 0.03);
+  for (const note of notes) scheduleNote(ctx, { ...note, at: t0 + note.start });
+}
+
+// ---------- Background music ----------
+
+const LOOKAHEAD_SECONDS = 0.25;
+
+function scheduleLoopSteps() {
+  const ctx = ensureContext();
+  const pattern = LOOPS[loop.name];
+  if (!ctx || !pattern) return;
+  while (loop.nextTime < ctx.currentTime + LOOKAHEAD_SECONDS) {
+    const at = Math.max(loop.nextTime, ctx.currentTime + 0.02);
+    const lead = pattern.lead[loop.step];
+    const bass = pattern.bass[loop.step];
+    if (lead) scheduleNote(ctx, { freq: lead, at, dur: pattern.stepSeconds * 0.85, gain: 0.32 });
+    if (bass) scheduleNote(ctx, { freq: bass, at, dur: pattern.stepSeconds * 0.9, type: 'triangle', gain: 0.4 });
+    loop.nextTime += pattern.stepSeconds;
+    loop.step = (loop.step + 1) % pattern.lead.length;
   }
+}
+
+/** Start/stop the background music: 'gameplay', 'power', or 'none'. */
+export function setLoop(name) {
+  const next = enabled && LOOPS[name] ? name : 'none';
+  if (next === loop.name) return;
+  clearInterval(loop.timer);
+  loop.timer = null;
+  loop.name = next;
+  if (next === 'none') return;
+  const ctx = ensureContext();
+  if (!ctx) {
+    loop.name = 'none';
+    return;
+  }
+  if (ctx.state === 'suspended') void ctx.resume();
+  loop.step = 0;
+  loop.nextTime = ctx.currentTime + 0.05;
+  scheduleLoopSteps();
+  loop.timer = setInterval(scheduleLoopSteps, 60);
+}
+
+export function currentLoop() {
+  return loop.name;
 }

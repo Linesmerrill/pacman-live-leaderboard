@@ -9,11 +9,14 @@ import { validateInitials, validateScore, validateTime, ValidationError } from '
 export interface Settings {
   completionTimeEnabled: boolean;
   soundEnabled: boolean;
+  /** TV master volume, 0–100. */
+  soundVolume: number;
   customDenyList: string[];
 }
 
 export interface DisplaySettings {
   soundEnabled: boolean;
+  soundVolume: number;
   rowsPerColumn: number;
   columns: number;
   pageSeconds: number;
@@ -57,6 +60,7 @@ export class NotFoundError extends Error {}
 
 const SETTING_TIME = 'completionTimeEnabled';
 const SETTING_SOUND = 'soundEnabled';
+const SETTING_VOLUME = 'soundVolume';
 const SETTING_DENY = 'customDenyList';
 const SUBMISSION_MEMORY_MS = 15 * 60 * 1000;
 
@@ -105,6 +109,8 @@ export class LeaderboardService {
   #loadSettings(): Settings {
     const time = this.#store.getSetting(SETTING_TIME);
     const sound = this.#store.getSetting(SETTING_SOUND);
+    const storedVolume = this.#store.getSetting(SETTING_VOLUME);
+    const volume = storedVolume === null ? Number.NaN : Number(storedVolume);
     const deny = this.#store.getSetting(SETTING_DENY);
     let customDenyList: string[] = [];
     if (deny) {
@@ -117,6 +123,7 @@ export class LeaderboardService {
     return {
       completionTimeEnabled: time === null ? this.#config.completionTimeEnabled : time === 'true',
       soundEnabled: sound === null ? this.#config.soundEnabled : sound === 'true',
+      soundVolume: Number.isFinite(volume) && volume >= 0 && volume <= 100 ? volume : this.#config.soundVolume,
       customDenyList,
     };
   }
@@ -129,13 +136,18 @@ export class LeaderboardService {
     return { ...this.#settings, customDenyList: [...this.#settings.customDenyList], builtInDenyListSize: BUILT_IN_DENY_LIST.length };
   }
 
-  updateSettings(patch: { completionTimeEnabled?: unknown; soundEnabled?: unknown; customDenyList?: unknown }): { rejectedDenyEntries: string[] } {
+  updateSettings(patch: { completionTimeEnabled?: unknown; soundEnabled?: unknown; soundVolume?: unknown; customDenyList?: unknown }): { rejectedDenyEntries: string[] } {
     let rejectedDenyEntries: string[] = [];
     for (const [field, key] of [['completionTimeEnabled', SETTING_TIME], ['soundEnabled', SETTING_SOUND]] as const) {
       const value = patch[field];
       if (value === undefined) continue;
       if (typeof value !== 'boolean') throw new TypeError(`${field} must be true or false`);
       this.#store.setSetting(key, String(value));
+    }
+    if (patch.soundVolume !== undefined) {
+      const volume = Number(patch.soundVolume);
+      if (!Number.isFinite(volume) || volume < 0 || volume > 100) throw new TypeError('soundVolume must be a number from 0 to 100');
+      this.#store.setSetting(SETTING_VOLUME, String(Math.round(volume)));
     }
     if (patch.customDenyList !== undefined) {
       const raw = patch.customDenyList;
@@ -175,7 +187,7 @@ export class LeaderboardService {
       latest,
       completionTimeEnabled: this.#settings.completionTimeEnabled,
       maxScore: this.#config.maxScore,
-      display: { soundEnabled: this.#settings.soundEnabled, rowsPerColumn: leaderboardSize, columns: boardColumns, pageSeconds, spotlightSeconds },
+      display: { soundEnabled: this.#settings.soundEnabled, soundVolume: this.#settings.soundVolume, rowsPerColumn: leaderboardSize, columns: boardColumns, pageSeconds, spotlightSeconds },
     };
   }
 

@@ -34,7 +34,7 @@ describe('LeaderboardService', () => {
     assert.equal(snap.totalPlayers, 5);
     assert.equal(snap.latest?.initials, 'P04');
     assert.equal(snap.latest?.rank, 4);
-    assert.deepEqual(snap.display, { soundEnabled: true, rowsPerColumn: 3, columns: 2, pageSeconds: 7, spotlightSeconds: 15 });
+    assert.deepEqual(snap.display, { soundEnabled: true, soundVolume: 80, rowsPerColumn: 3, columns: 2, pageSeconds: 7, spotlightSeconds: 15 });
   });
 
   test('flags new high scores only when #1 is beaten outright', () => {
@@ -111,6 +111,19 @@ describe('LeaderboardService', () => {
     assert.equal(fixture.service.getSettings().soundEnabled, false);
     assert.equal(fixture.service.snapshot().display.soundEnabled, false);
     assert.throws(() => fixture.service.updateSettings({ soundEnabled: 'off' }), TypeError);
+  });
+
+  test('volume starts from config, persists, and rejects out-of-range values', () => {
+    fixture = makeFixture({ soundVolume: 65 });
+    assert.equal(fixture.service.getSettings().soundVolume, 65, 'a fresh database uses the configured volume');
+    fixture.service.updateSettings({ soundVolume: 40 });
+    fixture = fixture.reopen();
+    assert.equal(fixture.service.snapshot().display.soundVolume, 40);
+    fixture.service.updateSettings({ soundVolume: 0 });
+    assert.equal(fixture.service.getSettings().soundVolume, 0, 'zero is a real volume, not "unset"');
+    for (const bad of [-1, 101, 'loud']) {
+      assert.throws(() => fixture.service.updateSettings({ soundVolume: bad }), TypeError);
+    }
   });
 
   test('custom deny-list entries block new codes and flag existing ones', () => {

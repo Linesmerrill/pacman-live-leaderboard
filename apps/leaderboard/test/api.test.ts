@@ -198,6 +198,54 @@ describe('HTTP API', () => {
     assert.equal((await h.call('POST', '/api/scores/99999/spotlight')).status, 404);
   });
 
+  test('game commands drive the state and push it to every screen', async () => {
+    const stream = await openStream(h.base);
+    const hello = await stream.next();
+    assert.equal(hello.game.state, 'idle', 'screens learn the game state as soon as they connect');
+
+    const ready = await h.call('POST', '/api/game/ready');
+    assert.equal(ready.status, 200);
+    assert.equal(ready.body.applied, true);
+    assert.equal(ready.body.status.state, 'ready');
+    assert.equal(ready.body.status.cue.name, 'intro');
+
+    const pushed = await stream.next();
+    assert.equal(pushed.reason, 'game');
+    assert.equal(pushed.game.state, 'ready');
+    assert.ok(pushed.snapshot, 'game messages still carry the leaderboard');
+    stream.close();
+
+    await h.call('POST', '/api/game/start');
+    const power = await h.call('POST', '/api/game/power-up');
+    assert.equal(power.body.status.state, 'power-mode');
+    assert.equal(power.body.status.loop, 'power');
+    assert.ok(power.body.status.phaseEndsAt > Date.now(), 'power mode ends on a timer');
+    assert.equal((await h.call('GET', '/api/game')).body.game.state, 'power-mode');
+    await h.call('POST', '/api/game/reset');
+  });
+
+  test('a command that does not fit the moment is accepted but ignored', async () => {
+    await h.call('POST', '/api/game/reset');
+    const res = await h.call('POST', '/api/game/power-up');
+    assert.equal(res.status, 200, 'a controller button must never error at the operator');
+    assert.equal(res.body.applied, false);
+    assert.equal(res.body.status.state, 'idle');
+    assert.equal((await h.call('POST', '/api/game/nonsense')).status, 404);
+  });
+
+  test('volume and mute commands update the saved settings', async () => {
+    await h.call('PUT', '/api/settings', { soundEnabled: true, soundVolume: 50 });
+    await h.call('POST', '/api/game/volume-up');
+    assert.equal((await h.call('GET', '/api/leaderboard')).body.display.soundVolume, 60);
+    await h.call('POST', '/api/game/volume-down');
+    await h.call('POST', '/api/game/volume-down');
+    assert.equal((await h.call('GET', '/api/game')).body.game.volume, 40);
+    await h.call('POST', '/api/game/mute');
+    assert.equal((await h.call('GET', '/api/game')).body.game.soundEnabled, false);
+    await h.call('POST', '/api/game/mute');
+    assert.equal((await h.call('GET', '/api/game')).body.game.soundEnabled, true);
+  });
+
   test('bad JSON is a 400, not a crash', async () => {
     const res = await fetch(`${h.base}/api/scores`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{nope' });
     assert.equal(res.status, 400);
@@ -220,7 +268,9 @@ describe('HTTP API with a staff PIN', () => {
     assert.equal((await h.call('POST', '/api/scores', { initials: 'PIN', score: 1 })).status, 401);
     assert.equal((await h.call('GET', '/api/scores', undefined, { 'X-Admin-Pin': 'wrong' })).status, 401);
     assert.equal((await h.call('POST', '/api/reset', { confirm: 'RESET' })).status, 401);
+    assert.equal((await h.call('POST', '/api/game/ready')).status, 401, 'the controller needs the PIN too');
     const ok = await h.call('POST', '/api/scores', { initials: 'PIN', score: 1 }, { 'X-Admin-Pin': '4321' });
     assert.equal(ok.status, 201);
+    assert.equal((await h.call('POST', '/api/game/ready', undefined, { 'X-Admin-Pin': '4321' })).status, 200);
   });
 });

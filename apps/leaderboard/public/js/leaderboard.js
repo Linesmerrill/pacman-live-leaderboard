@@ -6,7 +6,7 @@ import { formatTime, ordinal } from './format.js';
 import { connectLive } from './live.js';
 import { pageCount, pageForPosition, pageRange, splitColumns } from './paging.js';
 import { pixelText, pixelWidth } from './pixelfont.js';
-import { isSoundEnabled, play, primeAudio, setSoundEnabled, soundForEntry } from './sounds.js';
+import { isSoundEnabled, play, primeAudio, setLoop, setSoundEnabled, setVolume, soundForEntry } from './sounds.js';
 import { FRUIT_BY_RANK, GHOST_COLORS, ghost, pacman, scaredGhost, speaker } from './sprites.js';
 
 const FLASH_MS = 4_400; // matches the .fresh CSS animation (0.55s × 8)
@@ -50,6 +50,9 @@ const els = {
   overlayChase: $('overlay-chase'),
   panel: $('entry-panel'),
   entryLast: $('entry-last'),
+  subtitle: $('subtitle'),
+  gameStatus: $('game-status'),
+  gameFlash: $('game-flash'),
 };
 
 const state = {
@@ -67,6 +70,11 @@ const state = {
   overlayQueue: [],
   overlayBusy: false,
   lastAdded: null,
+  /** Latest game state from the server (driven by the Stream Deck or any controller). */
+  game: null,
+  lastCueId: 0,
+  flashTimer: null,
+  flashKey: '',
 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -327,6 +335,13 @@ function spotlight(entryId, delayMs = 0) {
 function tick() {
   const now = Date.now();
   let dirty = false;
+  if (state.game && state.game.state !== 'idle') {
+    renderGameStatus();
+    if (state.game.state === 'countdown') {
+      const left = phaseSecondsLeft();
+      showFlash(left > 0 ? String(left) : 'GO!', { className: 'count' });
+    }
+  }
   if (state.spot && now >= state.spot.until) {
     state.spot = null;
     state.nextPageAt = now + display().pageSeconds * 1000;
@@ -383,7 +398,8 @@ async function playCelebrations() {
 
 // ---------- Live updates ----------
 
-function handleUpdate({ reason, snapshot, added, spotlight: shown }) {
+function handleUpdate(message) {
+  const { reason, snapshot, added, spotlight: shown } = message;
   if (reason === 'reset') {
     state.fresh.clear();
     state.spot = null;
@@ -392,6 +408,12 @@ function handleUpdate({ reason, snapshot, added, spotlight: shown }) {
   state.snapshot = snapshot;
   entryForm.setSettings(snapshot);
   applySoundSetting(snapshot.display.soundEnabled);
+  setVolume(snapshot.display.soundVolume);
+  applyGame(message.game);
+  if (reason === 'game') {
+    render();
+    return;
+  }
 
   if (added) {
     const { entry, isNewHighScore } = added;
@@ -427,11 +449,108 @@ function handleStatus(status) {
   }
 }
 
+// ---------- Game state: READY / 3·2·1 / PLAYING / POWER MODE / FINISH ----------
+
+const FLASH_TEXT = {
+  ready: { text: 'READY!', ms: 2200 },
+  go: { text: 'GO!', ms: 900 },
+  'power-up': { text: 'POWER MODE!', ms: 1800, className: 'power' },
+  finish: { text: 'FINISH!', ms: 2600 },
+};
+
+function showFlash(text, { ms, className = '' } = {}) {
+  const key = `${className}:${text}`;
+  if (key === state.flashKey && !els.gameFlash.hidden) return; // don't restart the animation each tick
+  state.flashKey = key;
+  clearTimeout(state.flashTimer);
+  els.gameFlash.className = `game-flash ${className}`.trim();
+  els.gameFlash.replaceChildren(pixelText(text));
+  els.gameFlash.hidden = false;
+  if (!ms) return; // stays until something replaces it (the countdown)
+  state.flashTimer = setTimeout(hideFlash, ms);
+}
+
+function hideFlash() {
+  clearTimeout(state.flashTimer);
+  state.flashKey = '';
+  if (els.gameFlash.hidden) return;
+  els.gameFlash.classList.add('leaving');
+  state.flashTimer = setTimeout(() => {
+    els.gameFlash.hidden = true;
+  }, 350);
+}
+
+/** Seconds left in a timed phase (countdown, power mode), rounded up. */
+function phaseSecondsLeft() {
+  if (!state.game?.phaseEndsAt) return 0;
+  return Math.max(0, Math.ceil((state.game.phaseEndsAt - Date.now()) / 1000));
+}
+
+function runClock() {
+  if (!state.game?.startedAt) return '';
+  const seconds = Math.max(0, Math.floor((Date.now() - state.game.startedAt) / 1000));
+  return ` ${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+}
+
+/** The line under the title: normally "LIVE LEADERBOARD", otherwise what the run is doing. */
+function renderGameStatus() {
+  const game = state.game;
+  const idle = !game || game.state === 'idle';
+  els.subtitle.hidden = !idle;
+  els.gameStatus.hidden = idle;
+  if (idle) return;
+  const label = {
+    ready: 'READY!',
+    countdown: 'GET SET...',
+    playing: `PLAYING${runClock()}`,
+    'power-mode': `POWER MODE ${phaseSecondsLeft()}`,
+    finished: 'FINISH!',
+  }[game.state];
+  els.gameStatus.replaceChildren(pixelText(label));
+}
+
+/** Ghosts turn frightened-blue while the power pellet is active. */
+function renderGhosts(powerMode) {
+  const left = powerMode ? scaredGhost() + scaredGhost() : ghost(GHOST_COLORS.red) + ghost(GHOST_COLORS.pink);
+  const right = powerMode ? scaredGhost() + scaredGhost() : ghost(GHOST_COLORS.cyan) + ghost(GHOST_COLORS.orange);
+  if ($('ghosts-left').dataset.scared === String(powerMode)) return;
+  $('ghosts-left').dataset.scared = String(powerMode);
+  $('ghosts-right').dataset.scared = String(powerMode);
+  $('ghosts-left').innerHTML = left;
+  $('ghosts-right').innerHTML = right;
+}
+
+function applyGame(game) {
+  if (!game) return;
+  const previous = state.game;
+  state.game = game;
+
+  applySoundSetting(game.soundEnabled);
+  setVolume(game.volume);
+  setLoop(game.loop);
+
+  // Each cue carries an id that only ever increases, so every screen plays it exactly once.
+  if (game.cue && game.cue.id !== state.lastCueId) {
+    state.lastCueId = game.cue.id;
+    play(game.cue.name);
+    const flash = FLASH_TEXT[game.cue.name];
+    if (flash) showFlash(flash.text, flash);
+  }
+
+  document.body.dataset.gameState = game.state;
+  renderGhosts(game.state === 'power-mode');
+  if (game.state !== 'countdown' && previous?.state === 'countdown') hideFlash();
+  if (game.state === 'idle' && previous && previous.state !== 'idle') hideFlash();
+  renderGameStatus();
+}
+
 // ---------- Sound ----------
 
 function renderSoundButton() {
   const on = isSoundEnabled();
   els.soundBtn.innerHTML = speaker(!on);
+  if (!on) setLoop('none');
+  else if (state.game) setLoop(state.game.loop);
   els.soundBtn.dataset.muted = String(!on);
   els.soundBtn.title = on ? 'Sound effects on — click to mute' : 'Sound effects off — click to unmute';
 }

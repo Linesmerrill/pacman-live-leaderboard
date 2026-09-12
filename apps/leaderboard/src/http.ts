@@ -2,7 +2,9 @@ import { createHash, timingSafeEqual } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import path from 'node:path';
+import { GAME_COMMANDS, type GameCommand } from '../../../packages/shared/game-events.ts';
 import { APP_ROOT } from './config.ts';
+import { GameEngine } from './game.ts';
 import { LiveHub } from './live.ts';
 import { NotFoundError, type LeaderboardService } from './service.ts';
 import { ValidationError } from './validation.ts';
@@ -16,10 +18,11 @@ export interface AppOptions {
 export interface App {
   server: Server;
   hub: LiveHub;
+  game: GameEngine;
   close(): Promise<void>;
 }
 
-type UpdateReason = 'added' | 'updated' | 'deleted' | 'reset' | 'settings' | 'spotlight';
+type UpdateReason = 'added' | 'updated' | 'deleted' | 'reset' | 'settings' | 'spotlight' | 'game';
 
 class HttpError extends Error {
   readonly status: number;
@@ -103,8 +106,21 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
   const root = path.resolve(publicDir);
   const pin = service.config.adminPin;
 
+  const game = new GameEngine({
+    countdownSeconds: service.config.countdownSeconds,
+    powerModeSeconds: service.config.powerModeSeconds,
+    getSound: () => {
+      const settings = service.getSettings();
+      return { soundEnabled: settings.soundEnabled, volume: settings.soundVolume };
+    },
+    setSound: ({ soundEnabled, volume }) => service.updateSettings({ soundEnabled, soundVolume: volume }),
+    onChange: () => broadcast('game'),
+    log,
+  });
+
+  /** Every message carries the whole picture: scores + game state, so a screen can join at any time. */
   function broadcast(reason: UpdateReason, extra: Record<string, unknown> = {}): void {
-    hub.broadcast({ reason, snapshot: service.snapshot(), ...extra });
+    hub.broadcast({ reason, snapshot: service.snapshot(), game: game.status, ...extra });
   }
 
   function requireStaff(req: IncomingMessage): void {
@@ -148,12 +164,27 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
       return sendJson(res, 200, service.snapshot());
     }
     if (method === 'GET' && pathname === '/api/stream') {
-      hub.add(req, res, { reason: 'connected', snapshot: service.snapshot() });
+      hub.add(req, res, { reason: 'connected', snapshot: service.snapshot(), game: game.status });
       return;
+    }
+    if (method === 'GET' && pathname === '/api/game') {
+      return sendJson(res, 200, { game: game.status });
     }
 
     // Everything below is staff-only.
     requireStaff(req);
+
+    const gameMatch = /^\/api\/game\/([a-z-]+)$/.exec(pathname);
+    if (method === 'POST' && gameMatch) {
+      const command = gameMatch[1] as GameCommand;
+      if (!GAME_COMMANDS.includes(command)) {
+        throw new HttpError(404, 'unknown_command', `Unknown game command "${command}". Try one of: ${GAME_COMMANDS.join(', ')}.`);
+      }
+      const result = game.command(command);
+      // `applied: false` = the command didn't fit the current state (e.g. POWER UP before START).
+      // It's not an error: a controller button should never blow up in the operator's face.
+      return sendJson(res, 200, { command, ...result });
+    }
 
     if (method === 'GET' && pathname === '/api/auth') {
       return sendJson(res, 200, { ok: true, pinRequired: Boolean(pin) });
@@ -282,8 +313,10 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
   return {
     server,
     hub,
+    game,
     close: () =>
       new Promise<void>((resolve) => {
+        game.close();
         hub.close();
         server.close(() => resolve());
         server.closeAllConnections();
