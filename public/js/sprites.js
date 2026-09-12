@@ -70,3 +70,11 @@ export function orange(className = '') {
 }
 
 export const FRUIT_BY_RANK = { 1: cherry, 2: strawberry, 3: orange };
+
+/** Speaker icon for the TV's sound toggle. */
+export function speaker(muted) {
+  const wave = muted
+    ? '<path d="M64 36l26 28M90 36L64 64" stroke="currentColor" stroke-width="8" stroke-linecap="round" fill="none"/>'
+    : '<path d="M62 34a24 24 0 0 1 0 32M76 22a42 42 0 0 1 0 56" stroke="currentColor" stroke-width="8" stroke-linecap="round" fill="none"/>';
+  return `<svg class="speaker" viewBox="0 0 100 100" aria-hidden="true"><path d="M10 38h16l22-18v60L26 62H10z" fill="currentColor"/>${wave}</svg>`;
+}

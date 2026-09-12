@@ -6,7 +6,8 @@ import { formatTime, ordinal } from './format.js';
 import { connectLive } from './live.js';
 import { pageCount, pageForPosition, pageRange, splitColumns } from './paging.js';
 import { pixelText, pixelWidth } from './pixelfont.js';
-import { FRUIT_BY_RANK, GHOST_COLORS, ghost, pacman, scaredGhost } from './sprites.js';
+import { isSoundEnabled, play, primeAudio, setSoundEnabled, soundForEntry } from './sounds.js';
+import { FRUIT_BY_RANK, GHOST_COLORS, ghost, pacman, scaredGhost, speaker } from './sprites.js';
 
 const FLASH_MS = 4_400; // matches the .fresh CSS animation (0.55s × 8)
 const NEW_TAG_MS = 20_000;
@@ -40,6 +41,7 @@ const els = {
   lastRun: $('last-run'),
   players: $('players'),
   addBtn: $('add-btn'),
+  soundBtn: $('sound-btn'),
   conn: $('conn'),
   overlay: $('overlay'),
   overlayBanner: $('overlay-banner'),
@@ -279,7 +281,7 @@ function currentPageCount() {
   return pageCount(snapshot.entries.length, display().rowsPerColumn, effectiveColumns());
 }
 
-function goToPage(page) {
+function goToPage(page, { withSound = false } = {}) {
   if (page === state.page) {
     render();
     return;
@@ -294,6 +296,7 @@ function goToPage(page) {
     return;
   }
   state.wiping = true;
+  if (withSound) play('chomp'); // idle page flips stay silent; only a jump to a player chomps
   els.wipe.classList.remove('run');
   void els.wipe.offsetWidth; // restart the CSS animation
   els.wipe.classList.add('run');
@@ -317,7 +320,7 @@ function spotlight(entryId, delayMs = 0) {
   state.spot = { id: entryId, until: Date.now() + delayMs + display().spotlightSeconds * 1000 };
   const entry = state.snapshot?.entries.find((e) => e.id === entryId);
   const page = entry ? pageForPosition(entry.position, display().rowsPerColumn, effectiveColumns()) : -1;
-  if (page >= 0 && els.board.dataset.layout === 'multi') goToPage(page);
+  if (page >= 0 && els.board.dataset.layout === 'multi') goToPage(page, { withSound: true });
   else render();
 }
 
@@ -368,6 +371,7 @@ async function playCelebrations() {
     els.overlayChase.replaceChildren(train);
     els.overlay.classList.remove('leaving');
     els.overlay.hidden = false;
+    play('highScore');
 
     await sleep(OVERLAY_MS);
     els.overlay.classList.add('leaving');
@@ -387,11 +391,13 @@ function handleUpdate({ reason, snapshot, added, spotlight: shown }) {
   }
   state.snapshot = snapshot;
   entryForm.setSettings(snapshot);
+  applySoundSetting(snapshot.display.soundEnabled);
 
   if (added) {
     const { entry, isNewHighScore } = added;
     state.fresh.set(entry.id, Date.now());
     if (isNewHighScore) queueCelebration(entry, snapshot.completionTimeEnabled);
+    else play(soundForEntry({ isNewHighScore, rank: entry.rank, position: entry.position, rowsPerColumn: display().rowsPerColumn }));
     els.lastRun.classList.remove('pop');
     void els.lastRun.offsetWidth; // restart the animation
     els.lastRun.classList.add('pop');
@@ -401,6 +407,7 @@ function handleUpdate({ reason, snapshot, added, spotlight: shown }) {
   }
   if (shown) {
     render();
+    play('spotlight');
     spotlight(shown.entry.id);
     return;
   }
@@ -419,6 +426,35 @@ function handleStatus(status) {
     }, OFFLINE_NOTICE_DELAY_MS);
   }
 }
+
+// ---------- Sound ----------
+
+function renderSoundButton() {
+  const on = isSoundEnabled();
+  els.soundBtn.innerHTML = speaker(!on);
+  els.soundBtn.dataset.muted = String(!on);
+  els.soundBtn.title = on ? 'Sound effects on — click to mute' : 'Sound effects off — click to unmute';
+}
+
+function applySoundSetting(on) {
+  if (on !== isSoundEnabled()) {
+    setSoundEnabled(on);
+    renderSoundButton();
+  }
+}
+
+els.soundBtn.addEventListener('click', async () => {
+  const next = !isSoundEnabled();
+  primeAudio();
+  applySoundSetting(next); // instant feedback; the server confirms below
+  if (next) play('panelOpen');
+  try {
+    // Saved on the server so every screen agrees, and so it survives a refresh.
+    await api('PUT', '/api/settings', { soundEnabled: next });
+  } catch {
+    applySoundSetting(!next);
+  }
+});
 
 // ---------- Staff entry panel ----------
 
@@ -482,6 +518,8 @@ function openPanel(firstChar = '') {
   if (!els.panel.hidden) return;
   els.panel.hidden = false;
   panelOpenedAt = Date.now();
+  primeAudio();
+  play('panelOpen');
   renderLastAdded();
   if (firstChar) entryForm.typeInitial(firstChar);
   else entryForm.focus();
@@ -522,7 +560,11 @@ function wakeCursor() {
   cursorTimer = setTimeout(() => document.body.classList.add('cursor-idle'), CURSOR_IDLE_MS);
 }
 document.addEventListener('pointermove', wakeCursor);
-document.addEventListener('pointerdown', wakeCursor);
+document.addEventListener('pointerdown', () => {
+  wakeCursor();
+  primeAudio(); // browsers keep audio muted until the page is interacted with
+});
+document.addEventListener('keydown', primeAudio);
 
 let wakeLock = null;
 async function keepScreenAwake() {
@@ -556,7 +598,9 @@ els.frame.addEventListener('dblclick', (event) => {
 window.addEventListener('resize', () => render());
 
 setupStaticArt();
+renderSoundButton();
 wakeCursor();
+primeAudio();
 connectLive({ onUpdate: handleUpdate, onStatus: handleStatus });
 void keepScreenAwake();
 setInterval(tick, 500);

@@ -179,6 +179,10 @@ describe('HTTP API', () => {
     const timed = await h.call('POST', '/api/scores', { initials: 'TIM', score: 4, timeSeconds: '63.25' });
     assert.equal(timed.body.entry.timeSeconds, 63.3);
     assert.equal((await h.call('PUT', '/api/settings', { completionTimeEnabled: 'yes' })).status, 400);
+    assert.equal((await h.call('PUT', '/api/settings', { soundEnabled: 'loud' })).status, 400);
+    const quiet = await h.call('PUT', '/api/settings', { soundEnabled: false });
+    assert.equal(quiet.body.settings.soundEnabled, false);
+    assert.equal((await h.call('GET', '/api/leaderboard')).body.display.soundEnabled, false);
   });
 
   test('staff can put any player back in the TV spotlight', async () => {

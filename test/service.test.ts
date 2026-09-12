@@ -34,7 +34,7 @@ describe('LeaderboardService', () => {
     assert.equal(snap.totalPlayers, 5);
     assert.equal(snap.latest?.initials, 'P04');
     assert.equal(snap.latest?.rank, 4);
-    assert.deepEqual(snap.display, { rowsPerColumn: 3, columns: 2, pageSeconds: 7, spotlightSeconds: 15 });
+    assert.deepEqual(snap.display, { soundEnabled: true, rowsPerColumn: 3, columns: 2, pageSeconds: 7, spotlightSeconds: 15 });
   });
 
   test('flags new high scores only when #1 is beaten outright', () => {
@@ -101,6 +101,16 @@ describe('LeaderboardService', () => {
     fixture.service.updateSettings({ completionTimeEnabled: false });
     fixture = fixture.reopen();
     assert.equal(fixture.service.getSettings().completionTimeEnabled, false);
+  });
+
+  test('the sound setting persists and rejects non-boolean values', () => {
+    fixture = makeFixture();
+    assert.equal(fixture.service.getSettings().soundEnabled, true, 'sound is on by default');
+    fixture.service.updateSettings({ soundEnabled: false });
+    fixture = fixture.reopen();
+    assert.equal(fixture.service.getSettings().soundEnabled, false);
+    assert.equal(fixture.service.snapshot().display.soundEnabled, false);
+    assert.throws(() => fixture.service.updateSettings({ soundEnabled: 'off' }), TypeError);
   });
 
   test('custom deny-list entries block new codes and flag existing ones', () => {

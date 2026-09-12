@@ -8,10 +8,12 @@ import { validateInitials, validateScore, validateTime, ValidationError } from '
 
 export interface Settings {
   completionTimeEnabled: boolean;
+  soundEnabled: boolean;
   customDenyList: string[];
 }
 
 export interface DisplaySettings {
+  soundEnabled: boolean;
   rowsPerColumn: number;
   columns: number;
   pageSeconds: number;
@@ -54,6 +56,7 @@ export type SubmitResult =
 export class NotFoundError extends Error {}
 
 const SETTING_TIME = 'completionTimeEnabled';
+const SETTING_SOUND = 'soundEnabled';
 const SETTING_DENY = 'customDenyList';
 const SUBMISSION_MEMORY_MS = 15 * 60 * 1000;
 
@@ -101,6 +104,7 @@ export class LeaderboardService {
 
   #loadSettings(): Settings {
     const time = this.#store.getSetting(SETTING_TIME);
+    const sound = this.#store.getSetting(SETTING_SOUND);
     const deny = this.#store.getSetting(SETTING_DENY);
     let customDenyList: string[] = [];
     if (deny) {
@@ -112,6 +116,7 @@ export class LeaderboardService {
     }
     return {
       completionTimeEnabled: time === null ? this.#config.completionTimeEnabled : time === 'true',
+      soundEnabled: sound === null ? this.#config.soundEnabled : sound === 'true',
       customDenyList,
     };
   }
@@ -124,11 +129,13 @@ export class LeaderboardService {
     return { ...this.#settings, customDenyList: [...this.#settings.customDenyList], builtInDenyListSize: BUILT_IN_DENY_LIST.length };
   }
 
-  updateSettings(patch: { completionTimeEnabled?: unknown; customDenyList?: unknown }): { rejectedDenyEntries: string[] } {
+  updateSettings(patch: { completionTimeEnabled?: unknown; soundEnabled?: unknown; customDenyList?: unknown }): { rejectedDenyEntries: string[] } {
     let rejectedDenyEntries: string[] = [];
-    if (patch.completionTimeEnabled !== undefined) {
-      if (typeof patch.completionTimeEnabled !== 'boolean') throw new TypeError('completionTimeEnabled must be true or false');
-      this.#store.setSetting(SETTING_TIME, String(patch.completionTimeEnabled));
+    for (const [field, key] of [['completionTimeEnabled', SETTING_TIME], ['soundEnabled', SETTING_SOUND]] as const) {
+      const value = patch[field];
+      if (value === undefined) continue;
+      if (typeof value !== 'boolean') throw new TypeError(`${field} must be true or false`);
+      this.#store.setSetting(key, String(value));
     }
     if (patch.customDenyList !== undefined) {
       const raw = patch.customDenyList;
@@ -168,7 +175,7 @@ export class LeaderboardService {
       latest,
       completionTimeEnabled: this.#settings.completionTimeEnabled,
       maxScore: this.#config.maxScore,
-      display: { rowsPerColumn: leaderboardSize, columns: boardColumns, pageSeconds, spotlightSeconds },
+      display: { soundEnabled: this.#settings.soundEnabled, rowsPerColumn: leaderboardSize, columns: boardColumns, pageSeconds, spotlightSeconds },
     };
   }
 

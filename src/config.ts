@@ -23,6 +23,8 @@ export interface AppConfig {
   spotlightSeconds: number;
   /** Initial value of the completion-timer setting for a brand-new database. Toggle it later in /admin/settings. */
   completionTimeEnabled: boolean;
+  /** Initial value of the TV sound-effects setting for a brand-new database. Toggle it later in /admin/settings. */
+  soundEnabled: boolean;
   /** Optional PIN required by staff screens. Empty string = no PIN. */
   adminPin: string;
   /** Highest Pac-Dot count staff can enter. */
@@ -43,6 +45,7 @@ export const DEFAULT_CONFIG: Readonly<AppConfig> = Object.freeze({
   pageSeconds: 10,
   spotlightSeconds: 20,
   completionTimeEnabled: false,
+  soundEnabled: true,
   adminPin: '',
   maxScore: 999,
   maxTimeSeconds: 3600,
@@ -56,6 +59,7 @@ const ENV_KEYS: Record<string, keyof AppConfig> = {
   BACKUP_DIR: 'backupDirectory',
   LEADERBOARD_SIZE: 'leaderboardSize',
   COMPLETION_TIME_ENABLED: 'completionTimeEnabled',
+  SOUND_ENABLED: 'soundEnabled',
   ADMIN_PIN: 'adminPin',
 };
 

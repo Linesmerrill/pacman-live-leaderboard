@@ -14,6 +14,8 @@ const els = {
   scoresEmpty: $('scores-empty'),
   timeToggle: $('time-toggle'),
   timeToggleLabel: $('time-toggle-label'),
+  soundToggle: $('sound-toggle'),
+  soundToggleLabel: $('sound-toggle-label'),
   builtinCount: $('builtin-count'),
   deny: $('deny'),
   denySave: $('deny-save'),
@@ -126,9 +128,11 @@ els.sort.addEventListener('change', renderScores);
 // ---------- Settings ----------
 
 function renderSettings() {
-  const { completionTimeEnabled, customDenyList, builtInDenyListSize } = state.settings;
+  const { completionTimeEnabled, soundEnabled, customDenyList, builtInDenyListSize } = state.settings;
   els.timeToggle.checked = completionTimeEnabled;
   els.timeToggleLabel.textContent = completionTimeEnabled ? 'On — TIME column shown' : 'Off — ranked by Pac-Dots only';
+  els.soundToggle.checked = soundEnabled;
+  els.soundToggleLabel.textContent = soundEnabled ? 'On — the TV plays arcade sounds' : 'Off — the TV is silent';
   els.builtinCount.textContent = String(builtInDenyListSize);
   if (!state.denyDirty && document.activeElement !== els.deny) els.deny.value = customDenyList.join(' ');
 }
@@ -145,6 +149,19 @@ els.timeToggle.addEventListener('change', async () => {
   }
   renderSettings();
   renderScores();
+});
+
+els.soundToggle.addEventListener('change', async () => {
+  const enabled = els.soundToggle.checked;
+  try {
+    const { settings } = await api('PUT', '/api/settings', { soundEnabled: enabled });
+    state.settings = settings;
+    toast(enabled ? 'Sound effects ON.' : 'Sound effects OFF.', { tone: 'info' });
+  } catch (err) {
+    els.soundToggle.checked = !enabled;
+    toast(err.message, { tone: 'error' });
+  }
+  renderSettings();
 });
 
 els.deny.addEventListener('input', () => {

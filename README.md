@@ -132,6 +132,30 @@ to a USB stick.
   the TV loses the server for more than 5 seconds; it reconnects by itself.
 - The layout adapts to the screen shape (3 columns on a 16:9 TV, 2 on 4:3) and text auto-sizes to fit.
 
+## Sound effects
+
+The TV plays original arcade-style blips — square-wave jingles generated in the browser, so there are
+no audio files to manage and nothing to download:
+
+| When | Sound |
+| --- | --- |
+| A run lands below the top 10 | Short two-note blip |
+| A run makes the pinned top 10 | Rising three-note blip |
+| 1st, 2nd or 3rd place | Podium arpeggio with a bass note |
+| **New high score** (#1 beaten outright) | Full fanfare, timed to the celebration overlay |
+| The board jumps to a player (including **Show on TV**) | Sparkle, plus a Pac-Man chomp on the page flip |
+| Opening the entry panel | Soft blip |
+
+Idle page flips are deliberately silent, so the room only hears something when a kid actually scores.
+
+**Turning it off:** the speaker button next to **+ ADD PLAYER** on the TV, or **Manage scores → Sound
+effects**. The setting is saved on the server, so every screen agrees and it survives a restart. Set
+`soundEnabled` in `config.json` to change the starting value for a brand-new database.
+
+**Volume** is the TV's own volume (the Mac must be outputting audio over HDMI). Browsers block audio
+until someone interacts with the page; `npm run kiosk` launches Chrome with audio allowed from the
+start, and otherwise the first click or keypress on the board unlocks it.
+
 ## Completion timer (optional)
 
 Off by default. Turn it on in **Manage scores → Completion timer**. When on:
@@ -207,6 +231,7 @@ Edit `config.json` and restart the app. Every key is optional.
 | `pageSeconds` | `10` | Seconds between page flips of the lower ranks |
 | `spotlightSeconds` | `20` | How long a newly added player stays highlighted on screen |
 | `completionTimeEnabled` | `false` | Initial timer setting for a new database (then use the toggle in Manage scores) |
+| `soundEnabled` | `true` | Initial sound setting for a new database (then use the speaker button or Manage scores) |
 | `adminPin` | `""` | Staff PIN; empty = no PIN (env `ADMIN_PIN`) |
 | `maxScore` | `999` | Highest Pac-Dot count accepted |
 | `maxTimeSeconds` | `3600` | Longest completion time accepted |
@@ -220,7 +245,8 @@ Edit `config.json` and restart the app. Every key is optional.
 - **Server-Sent Events** (`/api/stream`) push every change to all screens; browsers reconnect
   automatically, and a 20-second poll is a safety net.
 - **Frontend:** plain HTML/CSS/JS modules — no framework, no CDN, no web fonts. The arcade lettering is
-  an original 5×7 pixel font drawn as SVG; ghosts, fruit and Pac-Man are original SVGs.
+  an original 5×7 pixel font drawn as SVG; ghosts, fruit and Pac-Man are original SVGs; the sound
+  effects are original Web Audio jingles, so there are no media files at all.
 
 ```
 src/
@@ -235,7 +261,7 @@ src/
 public/
   index.html      TV leaderboard (+ built-in entry panel)
   admin.html      staff entry     settings.html  manage scores
-  js/             leaderboard, entry form, paging, pixel font, sprites, live feed…
+  js/             leaderboard, entry form, paging, pixel font, sprites, sounds, live feed…
 test/             node:test suites (ranking, validation, service, paging, HTTP API)
 scripts/          kiosk launcher, auto-start installer, backup
 docs/screenshots/ README images
@@ -253,14 +279,14 @@ docs/screenshots/ README images
 | POST | `/api/scores/:id/spotlight` | Show a player on the TV again |
 | POST | `/api/reset` | `{ "confirm": "RESET" }` — backs up, then clears |
 | POST | `/api/backup` · GET `/api/export.csv` | Backup file · CSV download |
-| GET / PUT | `/api/settings` | Completion timer, custom blocked list |
+| GET / PUT | `/api/settings` | Completion timer, sound effects, custom blocked list |
 
 Staff endpoints require the `X-Admin-Pin` header only when `adminPin` is set.
 
 ## Tests
 
 ```bash
-npm test          # ranking, tie-breaks, validation, deny-list, persistence, paging, HTTP API
+npm test          # ranking, tie-breaks, validation, deny-list, persistence, paging, sounds, HTTP API
 npm run check     # type-check + tests
 ```
 
@@ -273,3 +299,4 @@ npm run check     # type-check + tests
 | Tablet can't open `/admin` | Same Wi-Fi as the Mac? Use the “On this Wi-Fi” address. Allow Node in macOS Firewall if asked. |
 | Chrome isn't full-screen | Use `npm run kiosk`, or Ctrl+Cmd+F. |
 | Initials rejected | They're on the blocked list, or aren't exactly 3 letters/numbers. Ask the kid for another combo. |
+| No sound on the TV | Check the speaker button next to + ADD PLAYER, the TV's own volume, and that the Mac is playing audio through the TV (System Settings → Sound → Output). Outside kiosk mode, click the board once to let the browser start audio. |

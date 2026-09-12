@@ -9,6 +9,7 @@
   "pageSeconds": 10,
   "spotlightSeconds": 20,
   "completionTimeEnabled": false,
+  "soundEnabled": true,
   "adminPin": "",
   "maxScore": 999,
   "maxTimeSeconds": 3600,
