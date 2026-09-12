@@ -14,15 +14,16 @@
   "scripts": {
     "start": "npm start --workspace @pacman/leaderboard",
     "dev": "npm run dev --workspace @pacman/leaderboard",
-    "test": "npm test --workspace @pacman/leaderboard",
-    "typecheck": "tsc -p tsconfig.json",
+    "test": "npm test --workspace @pacman/leaderboard && npm test --workspace @pacman/streamdeck",
+    "typecheck": "tsc -p tsconfig.json && tsc -p apps/streamdeck/tsconfig.json",
     "check": "npm run typecheck && npm test",
     "backup": "node --disable-warning=ExperimentalWarning scripts/backup.ts",
     "kiosk": "bash scripts/start-kiosk.sh",
     "autostart:install": "bash scripts/install-autostart.sh",
     "autostart:remove": "bash scripts/uninstall-autostart.sh",
     "streamdeck:build": "npm run build --workspace @pacman/streamdeck",
-    "streamdeck:install": "npm run install-plugin --workspace @pacman/streamdeck"
+    "streamdeck:install": "npm run install-plugin --workspace @pacman/streamdeck",
+    "test:leaderboard": "npm test --workspace @pacman/leaderboard"
   },
   "devDependencies": {
     "@types/node": "^22.20.2",

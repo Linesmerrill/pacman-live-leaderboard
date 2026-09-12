@@ -15,6 +15,9 @@ updates instantly — jumping straight to that kid's spot on the board so they c
 | Staff entry (tablet- or laptop-friendly) | `http://localhost:3000/admin` | Staff on a second device |
 | Manage scores | `http://localhost:3000/admin/settings` | Staff: edit, delete, export, reset |
 
+An optional **Stream Deck** runs the show itself — READY, 3·2·1, POWER UP, FINISH — driving the
+sounds and the TV from one set of physical keys. See [Running the show with a Stream Deck](#running-the-show-with-a-stream-deck).
+
 ---
 
 ## Mac mini setup
@@ -167,6 +170,57 @@ Off by default. Turn it on in **Manage scores → Completion timer**. When on:
 
 When off, times are ignored; equal scores share a rank and list earliest-submission first.
 
+## Running the show with a Stream Deck
+
+![The 15 keys of a Stream Deck MK.2 running the attraction](docs/screenshots/streamdeck-layout.png)
+
+The optional controller in [`apps/streamdeck`](apps/streamdeck) turns an Elgato Stream Deck into the
+attraction's control panel. Each key posts one command to the leaderboard app, which owns the game
+state — so the operator presses **one** button and the software does the rest:
+
+```
+POWER UP pressed
+   ├─ power-up sting, gameplay music swaps to power-mode music
+   ├─ TV: ghosts turn blue, maze walls flash, POWER MODE counts down
+   └─ 10 seconds later, all by itself:
+        power-down sound → normal music resumes → state back to PLAYING
+```
+
+Same for **3·2·1**: the countdown appears on the TV and the run starts on its own, so nobody has to
+press three buttons in the right order.
+
+| Command | What it does |
+| --- | --- |
+| `ready` | Intro sound, TV shows `READY!` |
+| `countdown` | 3·2·1 on the TV, then starts the run automatically |
+| `start` | Starts the run, its clock, and the gameplay music |
+| `power-up` | Power mode for `powerModeSeconds`, then back to normal play by itself |
+| `ghost-tag`, `fruit`, `pac-dot` | One-shot sounds during a run |
+| `high-score` | Plays the high-score fanfare on demand |
+| `finish` | Ends the run: music stops, `FINISH!` on the TV |
+| `stop-all` | Silences everything without changing the state |
+| `reset` | Back to the idle leaderboard |
+| `volume-up`, `volume-down`, `mute` | TV volume and mute |
+
+The keys also show what's happening: POWER UP counts down on the key itself, the live step lights up,
+commands that don't apply are dimmed, and every key says `(offline)` if the leaderboard isn't running.
+
+**Setup** (needs the Stream Deck app 7.1 or newer):
+
+```bash
+npm run streamdeck:build
+npm run streamdeck:install
+```
+
+Then drag **Game Action** onto a key and pick its job. Full details, including how to point a key at
+another Mac, are in [`apps/streamdeck/README.md`](apps/streamdeck/README.md).
+
+**No Stream Deck?** The same commands work from anything that can send a local HTTP request:
+
+```bash
+curl -X POST http://localhost:3000/api/game/power-up
+```
+
 ## Kid safety & privacy
 
 - Player codes must be **exactly 3 characters, A–Z or 0–9**; they're uppercased automatically.
@@ -232,6 +286,9 @@ Edit `config.json` and restart the app. Every key is optional.
 | `spotlightSeconds` | `20` | How long a newly added player stays highlighted on screen |
 | `completionTimeEnabled` | `false` | Initial timer setting for a new database (then use the toggle in Manage scores) |
 | `soundEnabled` | `true` | Initial sound setting for a new database (then use the speaker button or Manage scores) |
+| `soundVolume` | `80` | Initial TV volume 0–100 (then use the Stream Deck's VOL +/− keys) |
+| `countdownSeconds` | `3` | Length of the 3·2·1 countdown |
+| `powerModeSeconds` | `10` | How long POWER MODE lasts before normal play resumes by itself |
 | `adminPin` | `""` | Staff PIN; empty = no PIN (env `ADMIN_PIN`) |
 | `maxScore` | `999` | Highest Pac-Dot count accepted |
 | `maxTimeSeconds` | `3600` | Longest completion time accepted |
@@ -249,22 +306,27 @@ Edit `config.json` and restart the app. Every key is optional.
   effects are original Web Audio jingles, so there are no media files at all.
 
 ```
-src/
-  server.ts       starts everything, prints URLs, graceful shutdown
-  http.ts         routes, static files, staff PIN check
-  service.ts      business rules: submit / edit / delete / reset / backup / CSV
-  ranking.ts      pure ranking + tie-break rules
-  validation.ts   initials / score / time validation
-  denylist.ts     blocked-initials matching (look-alikes, wildcards)
-  store.ts        SQLite persistence
-  live.ts         Server-Sent Events hub
-public/
-  index.html      TV leaderboard (+ built-in entry panel)
-  admin.html      staff entry     settings.html  manage scores
-  js/             leaderboard, entry form, paging, pixel font, sprites, sounds, live feed…
-test/             node:test suites (ranking, validation, service, paging, HTTP API)
-scripts/          kiosk launcher, auto-start installer, backup
-docs/screenshots/ README images
+apps/leaderboard/            the app that runs the event
+  src/
+    server.ts       starts everything, prints URLs, graceful shutdown
+    http.ts         routes, static files, staff PIN check
+    service.ts      business rules: submit / edit / delete / reset / backup / CSV
+    game.ts         game state machine + the timers behind the countdown and POWER MODE
+    ranking.ts      pure ranking + tie-break rules
+    validation.ts   initials / score / time validation
+    denylist.ts     blocked-initials matching (look-alikes, wildcards)
+    store.ts        SQLite persistence
+    live.ts         Server-Sent Events hub
+  public/
+    index.html      TV leaderboard (+ built-in entry panel)
+    admin.html      staff entry     settings.html  manage scores
+    js/             leaderboard, entry form, paging, pixel font, sprites, sounds, live feed…
+  test/             ranking, validation, service, game, paging, sounds, HTTP API
+apps/streamdeck/             the optional hardware controller (has its own README)
+packages/shared/             the command + state contract that both apps import
+scripts/                     kiosk launcher, auto-start installer, backup
+docs/screenshots/            README images
+config.json · data/ · backups/   settings and event data, shared by both apps
 ```
 
 ### API (for the curious)
@@ -280,15 +342,21 @@ docs/screenshots/ README images
 | POST | `/api/reset` | `{ "confirm": "RESET" }` — backs up, then clears |
 | POST | `/api/backup` · GET `/api/export.csv` | Backup file · CSV download |
 | GET / PUT | `/api/settings` | Completion timer, sound effects, custom blocked list |
+| GET | `/api/game` | Current game state (state, music loop, last cue, volume) |
+| POST | `/api/game/:command` | Run a controller command — see the Stream Deck table above |
 
 Staff endpoints require the `X-Admin-Pin` header only when `adminPin` is set.
 
 ## Tests
 
 ```bash
-npm test          # ranking, tie-breaks, validation, deny-list, persistence, paging, sounds, HTTP API
-npm run check     # type-check + tests
+npm test          # leaderboard suites + the Stream Deck plugin driven by a simulated Stream Deck
+npm run check     # type-check both apps, then the tests
 ```
+
+The Stream Deck tests run the real built plugin against a real leaderboard, with a stand-in for the
+Stream Deck app on a WebSocket — so key presses, key artwork and the offline behaviour are covered
+without plugging anything in.
 
 ## Troubleshooting
 
@@ -299,4 +367,6 @@ npm run check     # type-check + tests
 | Tablet can't open `/admin` | Same Wi-Fi as the Mac? Use the “On this Wi-Fi” address. Allow Node in macOS Firewall if asked. |
 | Chrome isn't full-screen | Use `npm run kiosk`, or Ctrl+Cmd+F. |
 | Initials rejected | They're on the blocked list, or aren't exactly 3 letters/numbers. Ask the kid for another combo. |
+| Stream Deck keys say “(offline)” | The leaderboard isn't running, or the key points at the wrong address. Start it with `npm start`, or set the address in the key's Connection section. |
+| Stream Deck shows no Pac-Man Maze actions | Re-run `npm run streamdeck:build && npm run streamdeck:install`, and check the Stream Deck app is version 7.1 or newer. |
 | No sound on the TV | Check the speaker button next to + ADD PLAYER, the TV's own volume, and that the Mac is playing audio through the TV (System Settings → Sound → Output). Outside kiosk mode, click the board once to let the browser start audio. |

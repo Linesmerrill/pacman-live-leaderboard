@@ -3,3 +3,7 @@ data/
 backups/
 logs/
 .DS_Store
+
+# Stream Deck plugin build output and runtime logs
+apps/streamdeck/com.pacmanmaze.controller.sdPlugin/bin/
+apps/streamdeck/com.pacmanmaze.controller.sdPlugin/logs/

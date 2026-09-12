@@ -1,0 +1,39 @@
+{
+  "Name": "Pac-Man Maze Controller",
+  "UUID": "com.pacmanmaze.controller",
+  "Version": "1.0.0.0",
+  "Author": "Pac-Man Maze",
+  "Description": "Runs the Pac-Man Maze attraction: READY, 3·2·1, START, POWER UP, GHOST TAG, FINISH and more. Each key drives the leaderboard app's game state, sounds and TV visuals.",
+  "Category": "Pac-Man Maze",
+  "CategoryIcon": "imgs/plugin/category-icon",
+  "Icon": "imgs/plugin/marketplace",
+  "CodePath": "bin/plugin.js",
+  "SDKVersion": 2,
+  "Nodejs": {
+    "Version": "24"
+  },
+  "Software": {
+    "MinimumVersion": "7.1"
+  },
+  "OS": [
+    { "Platform": "mac", "MinimumVersion": "12" },
+    { "Platform": "windows", "MinimumVersion": "10" }
+  ],
+  "Actions": [
+    {
+      "Name": "Game Action",
+      "UUID": "com.pacmanmaze.controller.game-key",
+      "Icon": "imgs/actions/game-key/icon",
+      "Tooltip": "Pick a Pac-Man Maze action for this key: READY, START, POWER UP, FINISH…",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": ["Keypad"],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    }
+  ]
+}

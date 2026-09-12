@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Pac-Man Maze key</title>
+  <style>
+    /* Self-contained on purpose: the event Mac has no internet, so no CDN components. */
+    body { margin: 0; padding: 14px; font: 13px/1.4 system-ui, -apple-system, sans-serif; color: #d8d8d8; background: #2d2d2d; }
+    label { display: block; margin-bottom: 12px; }
+    span { display: block; margin-bottom: 4px; color: #969696; }
+    select, input { width: 100%; box-sizing: border-box; padding: 6px 8px; border-radius: 4px; border: 1px solid #3d3d3d; background: #1d1d1d; color: #fff; font: inherit; }
+    details { margin-top: 4px; color: #969696; }
+    summary { cursor: pointer; }
+    p.hint { margin: 6px 0 0; color: #7a7a7a; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <label>
+    <span>Action</span>
+    <select id="command"></select>
+  </label>
+
+  <details>
+    <summary>Connection</summary>
+    <label style="margin-top: 10px">
+      <span>Leaderboard address</span>
+      <input id="url" type="text" placeholder="http://localhost:3000" spellcheck="false">
+    </label>
+    <label>
+      <span>Staff PIN (only if one is set)</span>
+      <input id="pin" type="password" autocomplete="off">
+    </label>
+    <p class="hint">Leave the address blank when the leaderboard runs on this computer.</p>
+  </details>
+
+  <script>
+    const COMMANDS = [
+      ['ready', 'READY — intro sound, board waiting'],
+      ['countdown', '3·2·1 — countdown, then starts the run'],
+      ['start', 'START — begin the run and the music'],
+      ['power-up', 'POWER UP — power mode for a few seconds'],
+      ['ghost-tag', 'GHOST TAG — tagged-by-a-ghost sound'],
+      ['fruit', 'FRUIT — bonus sound'],
+      ['pac-dot', 'PAC-DOT — single dot blip'],
+      ['high-score', 'HIGH SCORE — play the fanfare'],
+      ['finish', 'FINISH — end the run'],
+      ['stop-all', 'STOP ALL — silence everything'],
+      ['reset', 'RESET — back to the idle board'],
+      ['volume-up', 'VOL + — TV volume up'],
+      ['volume-down', 'VOL − — TV volume down'],
+      ['mute', 'MUTE — toggle TV sound'],
+    ];
+
+    let websocket = null;
+    let context = null;
+    let settings = {};
+
+    const commandEl = document.getElementById('command');
+    const urlEl = document.getElementById('url');
+    const pinEl = document.getElementById('pin');
+
+    for (const [value, label] of COMMANDS) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      commandEl.append(option);
+    }
+
+    function save() {
+      settings = { command: commandEl.value, url: urlEl.value.trim(), pin: pinEl.value };
+      websocket?.send(JSON.stringify({ event: 'setSettings', context, payload: settings }));
+    }
+
+    commandEl.addEventListener('change', save);
+    for (const el of [urlEl, pinEl]) el.addEventListener('change', save);
+
+    // Called by the Stream Deck app when the property inspector opens.
+    function connectElgatoStreamDeckSocket(port, uuid, registerEvent, _info, actionInfo) {
+      context = uuid;
+      settings = JSON.parse(actionInfo).payload.settings ?? {};
+      commandEl.value = settings.command ?? 'ready';
+      urlEl.value = settings.url ?? '';
+      pinEl.value = settings.pin ?? '';
+      websocket = new WebSocket(`ws://127.0.0.1:${port}`);
+      websocket.addEventListener('open', () => {
+        websocket.send(JSON.stringify({ event: registerEvent, uuid }));
+        if (!settings.command) save(); // default a fresh key to READY
+      });
+    }
+    window.connectElgatoStreamDeckSocket = connectElgatoStreamDeckSocket;
+  </script>
+</body>
+</html>
