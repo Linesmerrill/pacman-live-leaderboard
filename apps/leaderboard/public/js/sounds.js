@@ -115,26 +115,6 @@ export const LOOPS = {
     lead: [440, null, 523, null, 659, null, 523, null, 587, null, 494, null, 440, null, 392, null],
     bass: [110, null, null, null, 131, null, null, null, 98, null, null, null, 110, null, 123, null],
   },
-  // Between runs: soft, slow, major-pentatonic. Meant to sit under conversation, not lead it.
-  idle: {
-    stepSeconds: 0.25,
-    leadType: 'triangle',
-    bassType: 'sine',
-    leadGain: 0.3,
-    bassGain: 0.5,
-    lead: [
-      659, null, 784, null, 880, null, 784, null,
-      659, null, 587, null, 659, null, null, null,
-      880, null, 988, null, 1175, null, 988, null,
-      880, null, 784, null, 659, null, null, null,
-    ],
-    bass: [
-      220, null, null, null, 165, null, null, null,
-      196, null, null, null, 147, null, null, null,
-      220, null, null, null, 165, null, null, null,
-      247, null, null, null, 196, null, null, null,
-    ],
-  },
   // Faster and tenser while the power pellet is active.
   power: {
     stepSeconds: 0.09,
@@ -142,6 +122,80 @@ export const LOOPS = {
     bass: [165, null, 165, null, 147, null, 147, null, 131, null, 131, null, 147, null, 165, null],
   },
 };
+
+// ---------- Background music between runs ----------
+//
+// Ten short pieces, composed here rather than stored as note-by-note data, played back to back and
+// shuffled — about five minutes before anything repeats, so a two-hour event doesn't drill one
+// eight-second loop into everyone's skull. Same ten every time (the generator is seeded), soft and
+// pentatonic so nothing clashes with the arcade sounds on top.
+
+const A4 = 440;
+const noteHz = (midi) => A4 * 2 ** ((midi - 69) / 12);
+
+/** Small deterministic PRNG, so every start-up composes the same album. */
+function seeded(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const SCALES = [
+  [0, 2, 4, 7, 9], // major pentatonic — bright
+  [0, 3, 5, 7, 10], // minor pentatonic — wistful
+  [0, 2, 5, 7, 9], // suspended flavour
+];
+/** Chord roots as semitones from the key, i.e. I – vi – IV – V and friends. */
+const PROGRESSIONS = [
+  [0, 9, 5, 7],
+  [0, 5, 9, 7],
+  [0, 7, 9, 5],
+  [0, 3, 8, 7],
+];
+const STEPS_PER_BAR = 8;
+
+/** One ~30-second piece: bass, a repeating melodic motif, and sometimes a soft arpeggio. */
+function composeTrack(index) {
+  const random = seeded(0x9e3779b9 + index * 2654435761);
+  const pick = (list) => list[Math.floor(random() * list.length)];
+
+  const stepSeconds = 0.22 + Math.round(random() * 4) * 0.02; // 0.22–0.30s per step
+  const scale = pick(SCALES);
+  const progression = pick(PROGRESSIONS);
+  const key = 57 + Math.floor(random() * 8); // A3 … E4
+  const bars = Math.max(8, Math.round(30 / (stepSeconds * STEPS_PER_BAR)));
+  const withArp = random() < 0.5;
+
+  // An 8-step motif, reused every bar so the ear has something to hold on to.
+  const motif = Array.from({ length: STEPS_PER_BAR }, () => {
+    if (random() < 0.38) return null; // rests keep it from feeling busy
+    return scale[Math.floor(random() * scale.length)] + (random() < 0.22 ? 12 : 0);
+  });
+
+  const steps = [];
+  for (let bar = 0; bar < bars; bar++) {
+    const chord = progression[bar % progression.length];
+    const quiet = bar % 8 === 7; // a breath every eight bars
+    for (let step = 0; step < STEPS_PER_BAR; step++) {
+      const note = motif[step];
+      // Vary the motif slightly in the second half of each phrase.
+      const shifted = note !== null && bar % 4 === 3 && random() < 0.3 ? note + 2 : note;
+      steps.push({
+        lead: quiet || shifted === null ? null : noteHz(key + chord + shifted),
+        // Kept above ~110 Hz: small TV speakers just turn anything lower into rumble.
+        bass: step % 4 === 0 ? noteHz(key + chord - 12 + (step === 0 ? 0 : 12)) : null,
+        arp: withArp && !quiet && step % 2 === 1 ? noteHz(key + chord + scale[(step + bar) % scale.length] + 12) : null,
+      });
+    }
+  }
+  return { stepSeconds, steps, seconds: Math.round(steps.length * stepSeconds) };
+}
+
+export const IDLE_TRACKS = Array.from({ length: 10 }, (_, i) => composeTrack(i));
 
 /** Which effect fits a newly added run. Pure, so it's covered by the tests. */
 export function soundForEntry({ isNewHighScore, rank, position, rowsPerColumn = 10 }) {
@@ -164,6 +218,7 @@ let idleEnabled = true;
 let idleVolume = 35;
 let idleGain = null;
 const loop = { name: 'none', timer: null, step: 0, nextTime: 0 };
+const album = { order: [], index: 0, step: 0 };
 
 // ---------- Your own sound files (assets/audio) ----------
 
@@ -336,6 +391,27 @@ export function play(name, { delay = 0 } = {}) {
 
 const LOOKAHEAD_SECONDS = 0.25;
 
+/** Schedules the idle album: each track plays through, then the next one starts. */
+function scheduleAlbumSteps() {
+  const ctx = ensureContext();
+  if (!ctx) return;
+  while (loop.nextTime < ctx.currentTime + LOOKAHEAD_SECONDS) {
+    const track = IDLE_TRACKS[album.order[album.index]];
+    const { lead, bass, arp } = track.steps[album.step];
+    const at = Math.max(loop.nextTime, ctx.currentTime + 0.02);
+    if (lead) scheduleNote(ctx, { freq: lead, at, dur: track.stepSeconds * 1.8, type: 'triangle', gain: 0.3, destination: idleGain });
+    if (bass) scheduleNote(ctx, { freq: bass, at, dur: track.stepSeconds * 3.2, type: 'sine', gain: 0.55, destination: idleGain });
+    if (arp) scheduleNote(ctx, { freq: arp, at, dur: track.stepSeconds * 0.8, type: 'triangle', gain: 0.12, destination: idleGain });
+    loop.nextTime += track.stepSeconds;
+    album.step++;
+    if (album.step >= track.steps.length) {
+      album.step = 0;
+      album.index = (album.index + 1) % album.order.length;
+      loop.nextTime += track.stepSeconds * 2; // a beat of silence between pieces
+    }
+  }
+}
+
 function scheduleLoopSteps() {
   const ctx = ensureContext();
   const pattern = LOOPS[loop.name];
@@ -373,7 +449,7 @@ function stopLoop() {
  * repeated over and over (the classic waka), else the built-in synth pattern.
  */
 export function setLoop(name) {
-  const next = enabled && (LOOPS[name] || name === 'gameplay' || name === 'power') ? name : 'none';
+  const next = enabled && (LOOPS[name] || name === 'idle' || name === 'gameplay' || name === 'power') ? name : 'none';
   if (next === loop.name) return;
   stopLoop();
   loop.name = next;
@@ -391,10 +467,14 @@ export function setLoop(name) {
       return;
     }
     idleGain.gain.value = idleMusicGain();
-    loop.step = 0;
+    // Shuffle the running order, and start somewhere in it, so the night doesn't always open
+    // with the same piece.
+    album.order = IDLE_TRACKS.map((_, i) => i).sort(() => Math.random() - 0.5);
+    album.index = Math.floor(Math.random() * album.order.length);
+    album.step = 0;
     loop.nextTime = ctx.currentTime + 0.05;
-    scheduleLoopSteps();
-    loop.timer = setInterval(scheduleLoopSteps, 60);
+    scheduleAlbumSteps();
+    loop.timer = setInterval(scheduleAlbumSteps, 60);
     return;
   }
 

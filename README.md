@@ -209,6 +209,13 @@ and after a FINISH. It ducks under every sound effect and stops completely once 
 never fights the waka. It has its own switch and volume slider in **Manage scores → Background
 music** (on at 35% by default), separate from the TV volume.
 
+It isn't one short loop on repeat: there are **ten different pieces of about 30 seconds each**, played
+back to back in a shuffled order — roughly five minutes before anything comes round again, which
+matters when it's running for a couple of hours. Each piece has its own key, tempo, chord movement
+and melody, and they're composed in code (`IDLE_TRACKS` in
+[`sounds.js`](apps/leaderboard/public/js/sounds.js)) rather than stored as audio, so they cost nothing
+to ship. Supplying a `gameplay-loop` file doesn't affect them.
+
 **Turning it off:** the speaker button next to **+ ADD PLAYER** on the TV, or **Manage scores → Sound
 effects**. The setting is saved on the server, so every screen agrees and it survives a restart. Set
 `soundEnabled` in `config.json` to change the starting value for a brand-new database.
