@@ -1,0 +1,45 @@
+# Event audio
+
+Drop sound files in this folder and the TV plays them instead of the built-in synthesised blips.
+Nothing here is required — with the folder empty, the app falls back to its own sounds.
+
+## Filenames
+
+The file name is the cue name. `.wav`, `.mp3`, `.ogg`, `.m4a` and `.aac` all work.
+
+| File | Plays when |
+| --- | --- |
+| `go.wav` | **Game start** — the run begins (after the 3·2·1 countdown, or on START) |
+| `power-up.wav` | **Power pellet** — POWER UP pressed |
+| `pac-dot.wav` | **Eating a dot** — also repeated over and over while the run is playing |
+| `finish.wav` | **Game over** — FINISH pressed |
+| `intro.wav` | READY |
+| `countdown.wav` | The 3·2·1 countdown starts |
+| `power-end.wav` | Power mode runs out |
+| `ghost-tag.wav` | GHOST TAG |
+| `fruit.wav` | FRUIT |
+| `high-score.wav` | A new high score (and the HIGH SCORE key) |
+| `stop.wav` | STOP ALL |
+
+Two optional background tracks, looped continuously:
+
+| File | Plays when |
+| --- | --- |
+| `gameplay-loop.wav` | While a run is playing — replaces the repeated `pac-dot` waka |
+| `power-loop.wav` | While power mode is active |
+
+Short files work best: the dot sound repeats every `wakaIntervalMs` (200 ms by default, in
+`config.json`), so anything longer than about a quarter of a second will overlap itself.
+
+## After adding or changing files
+
+Restart the app (`npm start`) — the folder is scanned at startup — then reload the TV page.
+Check what was picked up at <http://localhost:3000/api/audio>.
+
+## Licensing
+
+These are **your** files. The audio from Pac-Man is owned by Bandai Namco, so use recordings you have
+the right to use — a licensed sound pack, audio you made yourself, or sounds licensed for your event.
+
+Audio files in this folder are deliberately **not committed to git** (see `.gitignore`), so the public
+repository never redistributes them. They live only on the event Mac.

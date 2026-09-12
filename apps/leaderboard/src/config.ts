@@ -30,6 +30,10 @@ export interface AppConfig {
   soundEnabled: boolean;
   /** Initial TV volume (0–100) for a brand-new database. Stream Deck VOL +/− changes it live. */
   soundVolume: number;
+  /** Folder holding your own event sounds (see assets/audio/README.md). */
+  audioDirectory: string;
+  /** How often the eating-a-dot sound repeats while a run is playing, in milliseconds. */
+  wakaIntervalMs: number;
   /** Length of the 3·2·1 countdown before a run starts. */
   countdownSeconds: number;
   /** How long POWER MODE lasts before the TV drops back to normal play by itself. */
@@ -56,6 +60,8 @@ export const DEFAULT_CONFIG: Readonly<AppConfig> = Object.freeze({
   completionTimeEnabled: false,
   soundEnabled: true,
   soundVolume: 80,
+  audioDirectory: 'assets/audio',
+  wakaIntervalMs: 200,
   countdownSeconds: 3,
   powerModeSeconds: 10,
   adminPin: '',
@@ -69,6 +75,7 @@ const ENV_KEYS: Record<string, keyof AppConfig> = {
   HOST: 'host',
   DB_PATH: 'databaseFile',
   BACKUP_DIR: 'backupDirectory',
+  AUDIO_DIR: 'audioDirectory',
   LEADERBOARD_SIZE: 'leaderboardSize',
   COMPLETION_TIME_ENABLED: 'completionTimeEnabled',
   SOUND_ENABLED: 'soundEnabled',
@@ -115,7 +122,7 @@ export function loadConfig(options: { file?: string; env?: NodeJS.ProcessEnv; ro
     (config as unknown as Record<string, unknown>)[k] = value;
   }
 
-  for (const k of ['port', 'leaderboardSize', 'boardColumns', 'pageSeconds', 'spotlightSeconds', 'maxScore', 'maxTimeSeconds', 'duplicateWarningSeconds', 'soundVolume', 'countdownSeconds', 'powerModeSeconds'] as const) {
+  for (const k of ['port', 'leaderboardSize', 'boardColumns', 'pageSeconds', 'spotlightSeconds', 'maxScore', 'maxTimeSeconds', 'duplicateWarningSeconds', 'soundVolume', 'countdownSeconds', 'powerModeSeconds', 'wakaIntervalMs'] as const) {
     if (!Number.isInteger(config[k]) || config[k] < 0) throw new Error(`config: "${k}" must be a whole number ≥ 0`);
   }
   if (config.leaderboardSize < 3 || config.leaderboardSize > 20) throw new Error('config: "leaderboardSize" must be 3–20');
@@ -123,9 +130,11 @@ export function loadConfig(options: { file?: string; env?: NodeJS.ProcessEnv; ro
   if (config.pageSeconds < 3) throw new Error('config: "pageSeconds" must be at least 3');
   if (config.soundVolume > 100) throw new Error('config: "soundVolume" must be 0–100');
   if (config.powerModeSeconds < 1 || config.powerModeSeconds > 120) throw new Error('config: "powerModeSeconds" must be 1–120');
+  if (config.wakaIntervalMs < 60 || config.wakaIntervalMs > 2000) throw new Error('config: "wakaIntervalMs" must be 60–2000');
 
   if (config.databaseFile !== ':memory:') config.databaseFile = path.resolve(root, config.databaseFile);
   config.backupDirectory = path.resolve(root, config.backupDirectory);
+  config.audioDirectory = path.resolve(root, config.audioDirectory);
   config.adminPin = config.adminPin.trim();
   return config;
 }

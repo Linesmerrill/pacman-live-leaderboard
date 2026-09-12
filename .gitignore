@@ -7,3 +7,7 @@ logs/
 # Stream Deck plugin build output and runtime logs
 apps/streamdeck/com.pacmanmaze.controller.sdPlugin/bin/
 apps/streamdeck/com.pacmanmaze.controller.sdPlugin/logs/
+
+# Event audio: your own sound files, deliberately not redistributed by this repo
+assets/audio/*
+!assets/audio/README.md

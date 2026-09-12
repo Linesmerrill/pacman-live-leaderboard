@@ -11,6 +11,8 @@
   "completionTimeEnabled": false,
   "soundEnabled": true,
   "soundVolume": 80,
+  "audioDirectory": "assets/audio",
+  "wakaIntervalMs": 200,
   "countdownSeconds": 3,
   "powerModeSeconds": 10,
   "adminPin": "",

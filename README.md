@@ -151,6 +151,31 @@ no audio files to manage and nothing to download:
 
 Idle page flips are deliberately silent, so the room only hears something when a kid actually scores.
 
+### Using your own sounds
+
+Drop sound files into [`assets/audio/`](assets/audio/README.md) and the TV plays them instead of the
+built-in blips. The file name is the cue name:
+
+| File | Plays when |
+| --- | --- |
+| `go.wav` | **Game start** — the run begins (after the countdown, or on START) |
+| `power-up.wav` | **Power pellet** — POWER UP pressed |
+| `pac-dot.wav` | **Eating a dot** — and repeated over and over for the whole run |
+| `finish.wav` | **Game over** — FINISH pressed |
+
+`intro`, `countdown`, `power-end`, `ghost-tag`, `fruit`, `high-score` and `stop` work the same way, and
+`gameplay-loop` / `power-loop` replace the background music with a continuous track. `.wav`, `.mp3`,
+`.ogg`, `.m4a` and `.aac` all work. Anything you don't supply keeps its built-in sound, so the show
+always has audio.
+
+Restart the app after adding files (the folder is read at startup) and check what it picked up at
+<http://localhost:3000/api/audio>. The repeat rate of the dot sound is `wakaIntervalMs` in
+`config.json` (200 ms by default) — keep that file short so it doesn't overlap itself.
+
+**These are your files.** Pac-Man's audio belongs to Bandai Namco, so use recordings you have the
+right to use. The folder is git-ignored, so your sounds stay on the event Mac and this public
+repository never redistributes them.
+
 **Turning it off:** the speaker button next to **+ ADD PLAYER** on the TV, or **Manage scores → Sound
 effects**. The setting is saved on the server, so every screen agrees and it survives a restart. Set
 `soundEnabled` in `config.json` to change the starting value for a brand-new database.
@@ -287,6 +312,8 @@ Edit `config.json` and restart the app. Every key is optional.
 | `completionTimeEnabled` | `false` | Initial timer setting for a new database (then use the toggle in Manage scores) |
 | `soundEnabled` | `true` | Initial sound setting for a new database (then use the speaker button or Manage scores) |
 | `soundVolume` | `80` | Initial TV volume 0–100 (then use the Stream Deck's VOL +/− keys) |
+| `audioDirectory` | `"assets/audio"` | Folder holding your own sound files (env `AUDIO_DIR`) |
+| `wakaIntervalMs` | `200` | How often the eating-a-dot sound repeats during a run |
 | `countdownSeconds` | `3` | Length of the 3·2·1 countdown |
 | `powerModeSeconds` | `10` | How long POWER MODE lasts before normal play resumes by itself |
 | `adminPin` | `""` | Staff PIN; empty = no PIN (env `ADMIN_PIN`) |
@@ -303,7 +330,8 @@ Edit `config.json` and restart the app. Every key is optional.
   automatically, and a 20-second poll is a safety net.
 - **Frontend:** plain HTML/CSS/JS modules — no framework, no CDN, no web fonts. The arcade lettering is
   an original 5×7 pixel font drawn as SVG; ghosts, fruit and Pac-Man are original SVGs; the sound
-  effects are original Web Audio jingles, so there are no media files at all.
+  effects are original Web Audio jingles — with no files needed, though your own recordings in
+  `assets/audio` take over when present.
 
 ```
 apps/leaderboard/            the app that runs the event
@@ -312,6 +340,7 @@ apps/leaderboard/            the app that runs the event
     http.ts         routes, static files, staff PIN check
     service.ts      business rules: submit / edit / delete / reset / backup / CSV
     game.ts         game state machine + the timers behind the countdown and POWER MODE
+    audio.ts        finds and serves your own sound files from assets/audio
     ranking.ts      pure ranking + tie-break rules
     validation.ts   initials / score / time validation
     denylist.ts     blocked-initials matching (look-alikes, wildcards)
@@ -343,6 +372,7 @@ config.json · data/ · backups/   settings and event data, shared by both apps
 | POST | `/api/backup` · GET `/api/export.csv` | Backup file · CSV download |
 | GET / PUT | `/api/settings` | Completion timer, sound effects, custom blocked list |
 | GET | `/api/game` | Current game state (state, music loop, last cue, volume) |
+| GET | `/api/audio` | Which of your own sound files were found in `assets/audio` |
 | POST | `/api/game/:command` | Run a controller command — see the Stream Deck table above |
 
 Staff endpoints require the `X-Admin-Pin` header only when `adminPin` is set.
@@ -369,4 +399,5 @@ without plugging anything in.
 | Initials rejected | They're on the blocked list, or aren't exactly 3 letters/numbers. Ask the kid for another combo. |
 | Stream Deck keys say “(offline)” | The leaderboard isn't running, or the key points at the wrong address. Start it with `npm start`, or set the address in the key's Connection section. |
 | Stream Deck shows no Pac-Man Maze actions | Re-run `npm run streamdeck:build && npm run streamdeck:install`, and check the Stream Deck app is version 7.1 or newer. |
+| My own sound files aren't playing | Restart the app (the folder is read at startup), then check <http://localhost:3000/api/audio>. File names must match the cue names exactly, e.g. `go.wav`, and reload the TV page afterwards. |
 | No sound on the TV | Check the speaker button next to + ADD PLAYER, the TV's own volume, and that the Mac is playing audio through the TV (System Settings → Sound → Output). Outside kiosk mode, click the board once to let the browser start audio. |

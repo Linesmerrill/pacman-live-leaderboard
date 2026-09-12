@@ -3,6 +3,7 @@ import { readFile, stat } from 'node:fs/promises';
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import path from 'node:path';
 import { GAME_COMMANDS, type GameCommand } from '../../../packages/shared/game-events.ts';
+import { contentTypeFor, readAudioManifest, resolveAudioFile } from './audio.ts';
 import { APP_ROOT } from './config.ts';
 import { GameEngine } from './game.ts';
 import { LiveHub } from './live.ts';
@@ -58,7 +59,7 @@ const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'no-referrer',
   'Content-Security-Policy':
-    "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'",
+    "default-src 'self'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'",
 };
 
 function sendJson(res: ServerResponse, status: number, body: unknown): void {
@@ -105,6 +106,11 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
   const hub = new LiveHub();
   const root = path.resolve(publicDir);
   const pin = service.config.adminPin;
+  const audioDir = service.config.audioDirectory;
+  // Scanned once at startup: drop files in assets/audio, restart, and they replace the built-in sounds.
+  const audio = readAudioManifest(audioDir);
+  const audioCount = Object.keys(audio.cues).length + Object.keys(audio.loops).length;
+  if (audioCount > 0) log(`* using ${audioCount} sound file(s) from ${audioDir}`);
 
   const game = new GameEngine({
     countdownSeconds: service.config.countdownSeconds,
@@ -166,6 +172,9 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
     if (method === 'GET' && pathname === '/api/stream') {
       hub.add(req, res, { reason: 'connected', snapshot: service.snapshot(), game: game.status });
       return;
+    }
+    if (method === 'GET' && pathname === '/api/audio') {
+      return sendJson(res, 200, { ...audio, wakaIntervalMs: service.config.wakaIntervalMs });
     }
     if (method === 'GET' && pathname === '/api/game') {
       return sendJson(res, 200, { game: game.status });
@@ -287,6 +296,20 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
 
     try {
       if (pathname.startsWith('/api/')) return await handleApi(req, res, pathname);
+      if (pathname.startsWith('/audio/') && (req.method === 'GET' || req.method === 'HEAD')) {
+        const file = resolveAudioFile(audioDir, pathname.slice('/audio/'.length));
+        if (file) {
+          const body = await readFile(file);
+          res.writeHead(200, {
+            ...SECURITY_HEADERS,
+            'Content-Type': contentTypeFor(file) ?? 'application/octet-stream',
+            'Content-Length': body.length,
+            'Cache-Control': 'no-cache',
+          });
+          res.end(body);
+          return;
+        }
+      }
       if ((req.method === 'GET' || req.method === 'HEAD') && (await serveStatic(pathname, res))) return;
       res.writeHead(404, { ...SECURITY_HEADERS, 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('Not found. Try / for the leaderboard or /admin for staff entry.');

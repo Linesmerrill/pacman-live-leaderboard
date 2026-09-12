@@ -142,6 +142,54 @@ let enabled = true;
 let volume = 80;
 const loop = { name: 'none', timer: null, step: 0, nextTime: 0 };
 
+// ---------- Your own sound files (assets/audio) ----------
+
+/** cue/loop name → decoded AudioBuffer, for files supplied in assets/audio. */
+const files = new Map();
+let wakaIntervalMs = 200;
+const waka = { timer: null };
+
+/**
+ * Load the event's own sounds. Anything that loads replaces the built-in blip for that cue;
+ * anything missing or unreadable keeps the built-in one, so the show always has sound.
+ */
+export async function loadAudioFiles(manifest, { wakaMs = 200 } = {}) {
+  wakaIntervalMs = wakaMs;
+  const ctx = ensureContext();
+  if (!ctx || !manifest) return files;
+  const entries = [...Object.entries(manifest.cues ?? {}), ...Object.entries(manifest.loops ?? {})];
+  await Promise.all(
+    entries.map(async ([name, url]) => {
+      try {
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        files.set(name, await ctx.decodeAudioData(await response.arrayBuffer()));
+      } catch (err) {
+        console.warn(`Could not load ${url}; using the built-in sound instead.`, err);
+      }
+    }),
+  );
+  return files;
+}
+
+export function hasFile(name) {
+  return files.has(name);
+}
+
+/** Play a loaded file. Returns false when there isn't one, so the caller can fall back. */
+function playFile(name, { loopForever = false } = {}) {
+  const buffer = files.get(name);
+  const ctx = ensureContext();
+  if (!buffer || !ctx) return null;
+  if (ctx.state === 'suspended') void ctx.resume();
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.loop = loopForever;
+  source.connect(master);
+  source.start();
+  return source;
+}
+
 function ensureContext() {
   if (audio) return audio;
   const Ctor = window.AudioContext ?? window.webkitAudioContext;
@@ -170,7 +218,10 @@ export function setSoundEnabled(on) {
   enabled = Boolean(on);
   if (master) master.gain.value = masterGain();
   if (enabled) primeAudio();
-  else setLoop('none');
+  else {
+    setLoop('none');
+    stopLoop();
+  }
 }
 
 /** TV master volume, 0–100 (the Stream Deck's VOL +/− keys). */
@@ -207,6 +258,7 @@ function scheduleNote(ctx, { freq, at, dur, type = 'square', to = null, gain = 1
 /** Play one of the SFX above. Silently does nothing when sound is off or unavailable. */
 export function play(name, { delay = 0 } = {}) {
   if (!enabled) return;
+  if (delay === 0 && playFile(name)) return; // the event's own recording wins
   const notes = SFX[name];
   if (!notes) return;
   const ctx = ensureContext();
@@ -235,12 +287,26 @@ function scheduleLoopSteps() {
   }
 }
 
-/** Start/stop the background music: 'gameplay', 'power', or 'none'. */
-export function setLoop(name) {
-  const next = enabled && LOOPS[name] ? name : 'none';
-  if (next === loop.name) return;
+/** Stops whatever is currently looping: synth pattern, background track, or the waka. */
+function stopLoop() {
   clearInterval(loop.timer);
+  clearInterval(waka.timer);
   loop.timer = null;
+  waka.timer = null;
+  loop.track?.stop();
+  loop.track = null;
+}
+
+/**
+ * Start/stop the background sound: 'gameplay', 'power', or 'none'.
+ *
+ * Preference order for a run: the event's own `gameplay-loop` file, else the eating-a-dot sound
+ * repeated over and over (the classic waka), else the built-in synth pattern.
+ */
+export function setLoop(name) {
+  const next = enabled && (LOOPS[name] || name === 'gameplay' || name === 'power') ? name : 'none';
+  if (next === loop.name) return;
+  stopLoop();
   loop.name = next;
   if (next === 'none') return;
   const ctx = ensureContext();
@@ -249,6 +315,19 @@ export function setLoop(name) {
     return;
   }
   if (ctx.state === 'suspended') void ctx.resume();
+
+  const trackName = next === 'gameplay' ? 'gameplay-loop' : 'power-loop';
+  if (files.has(trackName)) {
+    loop.track = playFile(trackName, { loopForever: true });
+    return;
+  }
+  if (next === 'gameplay' && files.has('pac-dot')) {
+    const chomp = () => playFile('pac-dot');
+    chomp();
+    waka.timer = setInterval(chomp, wakaIntervalMs);
+    return;
+  }
+
   loop.step = 0;
   loop.nextTime = ctx.currentTime + 0.05;
   scheduleLoopSteps();

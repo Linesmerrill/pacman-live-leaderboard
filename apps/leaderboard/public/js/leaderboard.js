@@ -6,7 +6,7 @@ import { formatTime, ordinal } from './format.js';
 import { connectLive } from './live.js';
 import { pageCount, pageForPosition, pageRange, splitColumns } from './paging.js';
 import { pixelText, pixelWidth } from './pixelfont.js';
-import { isSoundEnabled, play, primeAudio, setLoop, setSoundEnabled, setVolume, soundForEntry } from './sounds.js';
+import { isSoundEnabled, loadAudioFiles, play, primeAudio, setLoop, setSoundEnabled, setVolume, soundForEntry } from './sounds.js';
 import { FRUIT_BY_RANK, GHOST_COLORS, ghost, pacman, scaredGhost, speaker } from './sprites.js';
 
 const FLASH_MS = 4_400; // matches the .fresh CSS animation (0.55s × 8)
@@ -715,6 +715,12 @@ els.frame.addEventListener('dblclick', (event) => {
 });
 
 window.addEventListener('resize', () => render());
+
+// The event's own sounds (assets/audio), if any were supplied.
+void fetch('/api/audio', { cache: 'no-store' })
+  .then((res) => res.json())
+  .then((manifest) => loadAudioFiles(manifest, { wakaMs: manifest.wakaIntervalMs ?? 200 }))
+  .catch(() => {});
 
 setupStaticArt();
 renderSoundButton();
