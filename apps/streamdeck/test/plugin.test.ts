@@ -51,15 +51,9 @@ function keyEvent(event: string, context: string, command: string, action = ACTI
   };
 }
 
-/**
- * The words a key was last painted with. They live inside the key image rather than in
- * Stream Deck's own title, which draws at one fixed size and clipped the longer labels.
- */
+/** The title a key was last painted with, or undefined if it was never painted. */
 function lastTitle(context: string): string | undefined {
-  const image = sent.filter((m) => m.event === 'setImage' && m.context === context).at(-1)?.payload.image;
-  if (image === undefined) return undefined;
-  const svg = decodeURIComponent(String(image).replace(/^data:image\/svg\+xml;charset=utf8,/, ''));
-  return [...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map((m) => m[1]).join('\n');
+  return sent.filter((m) => m.event === 'setTitle' && m.context === context).at(-1)?.payload.title;
 }
 
 async function waitFor(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
@@ -136,7 +130,7 @@ describe('Stream Deck plugin', { concurrency: false }, () => {
     await fetch(`${leaderboardUrl}/api/game/start`, { method: 'POST' });
     sent.length = 0;
     send(keyEvent('keyDown', 'KEY-POWER', 'power-up'));
-    await waitFor(() => sent.filter((m) => m.event === 'setImage' && m.context === 'KEY-POWER').length >= 2, 6000);
+    await waitFor(() => sent.filter((m) => m.event === 'setTitle' && m.context === 'KEY-POWER' && /POWER UP\n\d+s/.test(m.payload.title)).length >= 2, 6000);
     assert.match(lastTitle('KEY-POWER')!, /POWER UP\n\d+s/);
     await fetch(`${leaderboardUrl}/api/game/reset`, { method: 'POST' });
   });
@@ -180,7 +174,7 @@ describe('Stream Deck plugin', { concurrency: false }, () => {
     sent.length = 0;
     send(keyEvent('willAppear', 'PAINT-GHOST', '', uuidFor('ghost-tag')));
     await waitFor(() => lastTitle('PAINT-GHOST') !== undefined);
-    assert.equal(lastTitle('PAINT-GHOST'), 'GHOST TAG');
+    assert.equal(lastTitle('PAINT-GHOST'), 'GHOST');
   });
 
   test('the status key reports the state and the player count', async () => {
@@ -190,8 +184,8 @@ describe('Stream Deck plugin', { concurrency: false }, () => {
       body: JSON.stringify({ initials: 'SDK', score: 12 }),
     });
     send(keyEvent('willAppear', 'STATUS-KEY', '', 'com.pacmanmaze.controller.status'));
-    await waitFor(() => /on board/.test(lastTitle('STATUS-KEY') ?? ''));
-    assert.match(lastTitle('STATUS-KEY')!, /^IDLE\n1 on board$/);
+    await waitFor(() => /scores/.test(lastTitle('STATUS-KEY') ?? ''));
+    assert.match(lastTitle('STATUS-KEY')!, /^IDLE\n1 scores$/);
 
     sent.length = 0;
     await fetch(`${leaderboardUrl}/api/game/start`, { method: 'POST' });

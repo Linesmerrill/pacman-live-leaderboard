@@ -48,6 +48,19 @@ const ACTIVE_IN: Partial<Record<GameCommand, GameState[]>> = {
   finish: ['finished'],
 };
 
+/**
+ * Stream Deck draws a key's title at a fixed size and simply clips whatever doesn't fit,
+ * so a key label has to stay short. Anything longer than about eight characters loses its
+ * ends; these are the commands whose full names don't survive that.
+ */
+export const KEY_TITLES: Partial<Record<GameCommand, string>> = {
+  'ghost-tag': 'GHOST',
+  'high-score': 'HI SCORE',
+};
+
+/** The longest a line on a key can be before Stream Deck clips it. */
+export const MAX_TITLE_LINE = 9;
+
 /** Short state names for the status key. */
 const STATE_LABELS: Record<GameState, string> = {
   idle: 'IDLE',
@@ -75,16 +88,20 @@ const visibleKeys = new Map<string, Entry>();
  * manifest id, so dragging "POWER UP" onto the deck is all the setup there is.
  */
 class GameKeyAction extends SingletonAction<GameKeySettings> {
-  constructor(
-    private readonly fixed?: GameCommand,
-    private readonly status = false,
-  ) {
+  // Plain fields, not constructor parameter properties: the tests import this file
+  // directly and Node's type stripping can't parse those.
+  readonly #fixed?: GameCommand;
+  readonly #status: boolean;
+
+  constructor(fixed?: GameCommand, status = false) {
     super();
+    this.#fixed = fixed;
+    this.#status = status;
   }
 
   override onWillAppear(ev: WillAppearEvent<GameKeySettings>): void {
     if (!ev.action.isKey()) return;
-    visibleKeys.set(ev.action.id, { action: ev.action, settings: ev.payload.settings, fixed: this.fixed, status: this.status, painted: '' });
+    visibleKeys.set(ev.action.id, { action: ev.action, settings: ev.payload.settings, fixed: this.#fixed, status: this.#status, painted: '' });
     applyConnection();
     void paint(ev.action.id);
   }
@@ -103,12 +120,12 @@ class GameKeyAction extends SingletonAction<GameKeySettings> {
 
   override async onKeyDown(ev: KeyDownEvent<GameKeySettings>): Promise<void> {
     // The status key reports; it never sends a command.
-    if (this.status) {
+    if (this.#status) {
       gameClient.reconnect();
       await ev.action.showOk();
       return;
     }
-    const command = this.fixed ?? ev.payload.settings.command;
+    const command = this.#fixed ?? ev.payload.settings.command;
     if (!command || !GAME_COMMANDS.includes(command)) {
       streamDeck.logger.warn('Key pressed before an action was chosen in the property inspector.');
       await ev.action.showAlert();
@@ -166,11 +183,11 @@ async function paint(id: string): Promise<void> {
   let title: string;
   if (entry.status) {
     title = statusTitle(state, offline);
-    image = statusImage({ state, offline, text: title });
+    image = statusImage({ state, offline });
   } else if (!command) {
     // The configurable key before anyone has chosen what it does.
     title = 'SET UP';
-    image = keyImage({ command: 'ready', dimmed: true, offline: true, text: title });
+    image = keyImage({ command: 'ready', dimmed: true, offline: true });
   } else {
     title = keyTitle(command, offline);
     image = keyImage({
@@ -179,7 +196,6 @@ async function paint(id: string): Promise<void> {
       dimmed: command === 'spotlight' ? gameClient.players === 0 : Boolean(AVAILABLE_IN[command] && !AVAILABLE_IN[command]!.includes(state)),
       active: Boolean(ACTIVE_IN[command]?.includes(state)),
       offline,
-      text: title,
     });
   }
 
@@ -188,30 +204,28 @@ async function paint(id: string): Promise<void> {
   if (fingerprint === entry.painted) return;
   entry.painted = fingerprint;
   await key.setImage(image);
-  // The label is drawn into the image so it can shrink to fit; Stream Deck's own
-  // title would otherwise print a second, clipped copy over the top of it.
-  await key.setTitle('');
+  await key.setTitle(title);
 }
 
 /** Key label: the command name, plus whatever live detail is useful on that key. */
-function keyTitle(command: GameCommand, offline: boolean): string {
-  if (offline) return `${COMMAND_LABELS[command]}\n(offline)`;
+export function keyTitle(command: GameCommand, offline: boolean): string {
+  const name = KEY_TITLES[command] ?? COMMAND_LABELS[command];
+  if (offline) return `${name}\noffline`;
   const status = gameClient.status;
   if (command === 'power-up' && status?.state === 'power-mode' && status.phaseEndsAt) {
     const left = Math.max(0, Math.ceil((status.phaseEndsAt - Date.now()) / 1000));
-    return `${COMMAND_LABELS[command]}\n${left}s`;
+    return `${name}\n${left}s`;
   }
-  if ((command === 'volume-up' || command === 'volume-down') && status) return `${COMMAND_LABELS[command]}\n${status.volume}%`;
+  if ((command === 'volume-up' || command === 'volume-down') && status) return `${name}\n${status.volume}%`;
   if (command === 'mute' && status) return status.soundEnabled ? 'MUTE' : 'MUTED';
-  return COMMAND_LABELS[command];
+  return name;
 }
 
 /** Status tile: what the game is doing, how long is left, and how many players are on the board. */
-function statusTitle(state: GameState, offline: boolean): string {
-  if (offline) return 'NO SERVER\ncheck the\nleaderboard';
+export function statusTitle(state: GameState, offline: boolean): string {
+  if (offline) return 'NO\nSERVER';
+  // Two short lines only: a third would be unreadable, and long ones get clipped.
   const status = gameClient.status;
-  const lines = [STATE_LABELS[state]];
-  if (status?.runEndsAt) lines.push(`${Math.max(0, Math.ceil((status.runEndsAt - Date.now()) / 1000))}s left`);
-  lines.push(`${gameClient.players} on board`);
-  return lines.join('\n');
+  if (status?.runEndsAt) return `${STATE_LABELS[state]}\n${Math.max(0, Math.ceil((status.runEndsAt - Date.now()) / 1000))}s`;
+  return `${STATE_LABELS[state]}\n${gameClient.players} scores`;
 }
