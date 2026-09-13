@@ -49,6 +49,33 @@ const COLORS: Record<GameCommand, string> = {
   mute: '#8ea2ff',
 };
 
+
+/**
+ * Stream Deck draws a key's title at one fixed size, so "HIGH SCORE" and "23 on board"
+ * ran off the edges of the key. Drawing the label into the image instead lets it shrink
+ * to fit, and an outline keeps it readable over the artwork.
+ */
+function label(text: string, color: string): string {
+  const lines = text.split('\n').filter(Boolean);
+  if (!lines.length) return '';
+  const widest = Math.max(...lines.map((line) => line.length));
+  // Roughly the width of a bold uppercase character, as a fraction of the font size.
+  const size = Math.max(6, Math.min(11, 64 / (0.6 * widest)));
+  const lineHeight = size * 1.15;
+  const bottom = 70 - (lines.length - 1) * lineHeight;
+  return lines
+    .map(
+      (line, index) =>
+        `<text x="36" y="${(bottom + index * lineHeight).toFixed(1)}" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-weight="bold" font-size="${size.toFixed(1)}" fill="${color}" stroke="#000" stroke-width="2.5" paint-order="stroke" stroke-linejoin="round">${escapeText(line)}</text>`,
+    )
+    .join('');
+}
+
+/** SVG is XML: a label like "VOL &" must not break the document. */
+function escapeText(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 export interface KeyLook {
   command: GameCommand;
   /** Dim the key when the command can't be used right now. */
@@ -57,18 +84,21 @@ export interface KeyLook {
   active?: boolean;
   /** The leaderboard can't be reached. */
   offline?: boolean;
+  /** Drawn into the key so it fits; Stream Deck's own title is left empty. */
+  text?: string;
 }
 
 /** A 72×72 key image as an SVG data URI. */
-export function keyImage({ command, dimmed = false, active = false, offline = false }: KeyLook): string {
+export function keyImage({ command, dimmed = false, active = false, offline = false, text = '' }: KeyLook): string {
   const color = offline ? '#5b6280' : COLORS[command];
   const background = active ? '#1d2a6b' : '#000000';
   const border = offline ? '#3a3f57' : active ? '#ffe135' : '#2447ff';
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
 <rect width="72" height="72" rx="10" fill="${background}"/>
 <rect x="2" y="2" width="68" height="68" rx="9" fill="none" stroke="${border}" stroke-width="${active ? 4 : 2}" opacity="${offline ? 0.5 : 0.9}"/>
-<g opacity="${dimmed ? 0.35 : 1}" transform="translate(6,-2) scale(0.82)">${ART[command](color)}</g>
-${offline ? '<circle cx="61" cy="61" r="6" fill="#ff4d6d"/>' : ''}
+<g opacity="${dimmed ? 0.35 : 1}" transform="translate(6,-8) scale(0.78)">${ART[command](color)}</g>
+${offline ? '<circle cx="64" cy="10" r="5" fill="#ff4d6d"/>' : ''}
+${label(text, dimmed ? '#9aa0b8' : '#ffffff')}
 </svg>`;
   return `data:image/svg+xml;charset=utf8,${encodeURIComponent(svg)}`;
 }
@@ -87,15 +117,16 @@ const STATE_COLORS: Record<GameState, string> = {
  * The status tile: Pac-Man chasing a row of dots, coloured by what the game is doing.
  * Drawn here rather than shipped as images so it stays crisp on every deck.
  */
-export function statusImage({ state, offline }: { state: GameState; offline: boolean }): string {
+export function statusImage({ state, offline, text = '' }: { state: GameState; offline: boolean; text?: string }): string {
   const color = offline ? '#5b6280' : STATE_COLORS[state];
   const mouth = state === 'playing' || state === 'power-mode' ? 26 : 8;
-  const dots = [46, 58, 70].map((x) => `<circle cx="${x}" cy="26" r="3.5" fill="${color}" opacity="${offline ? 0.4 : 0.85}"/>`).join('');
+  const dots = [44, 55, 66].map((x) => `<circle cx="${x}" cy="24" r="3.2" fill="${color}" opacity="${offline ? 0.4 : 0.85}"/>`).join('');
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 72 72">
 <rect width="72" height="72" rx="10" fill="#000000"/>
 <rect x="2" y="2" width="68" height="68" rx="9" fill="none" stroke="${offline ? '#ff4d6d' : color}" stroke-width="2" opacity="${offline ? 0.7 : 0.65}"/>
-<path d="M26 26 ${26 + 18 * Math.cos((mouth * Math.PI) / 180)} ${26 - 18 * Math.sin((mouth * Math.PI) / 180)}a18 18 0 1 0 0 ${2 * 18 * Math.sin((mouth * Math.PI) / 180)}z" fill="${color}"/>
+<path d="M24 24 ${24 + 16 * Math.cos((mouth * Math.PI) / 180)} ${24 - 16 * Math.sin((mouth * Math.PI) / 180)}a16 16 0 1 0 0 ${2 * 16 * Math.sin((mouth * Math.PI) / 180)}z" fill="${color}"/>
 ${dots}
+${label(text, '#ffffff')}
 </svg>`;
   return `data:image/svg+xml;charset=utf8,${encodeURIComponent(svg)}`;
 }

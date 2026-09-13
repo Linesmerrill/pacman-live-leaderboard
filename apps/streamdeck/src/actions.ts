@@ -165,21 +165,22 @@ async function paint(id: string): Promise<void> {
   let image: string;
   let title: string;
   if (entry.status) {
-    image = statusImage({ state, offline });
     title = statusTitle(state, offline);
+    image = statusImage({ state, offline, text: title });
   } else if (!command) {
     // The configurable key before anyone has chosen what it does.
-    image = keyImage({ command: 'ready', dimmed: true, offline: true });
     title = 'SET UP';
+    image = keyImage({ command: 'ready', dimmed: true, offline: true, text: title });
   } else {
+    title = keyTitle(command, offline);
     image = keyImage({
       command,
       // SPOTLIGHT has nobody to show until a score has been entered.
       dimmed: command === 'spotlight' ? gameClient.players === 0 : Boolean(AVAILABLE_IN[command] && !AVAILABLE_IN[command]!.includes(state)),
       active: Boolean(ACTIVE_IN[command]?.includes(state)),
       offline,
+      text: title,
     });
-    title = keyTitle(command, offline);
   }
 
   // Only talk to Stream Deck when something actually changed.
@@ -187,7 +188,9 @@ async function paint(id: string): Promise<void> {
   if (fingerprint === entry.painted) return;
   entry.painted = fingerprint;
   await key.setImage(image);
-  await key.setTitle(title);
+  // The label is drawn into the image so it can shrink to fit; Stream Deck's own
+  // title would otherwise print a second, clipped copy over the top of it.
+  await key.setTitle('');
 }
 
 /** Key label: the command name, plus whatever live detail is useful on that key. */

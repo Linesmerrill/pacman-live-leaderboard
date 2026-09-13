@@ -51,9 +51,15 @@ function keyEvent(event: string, context: string, command: string, action = ACTI
   };
 }
 
-/** The title a key was last painted with, or undefined if it was never painted. */
+/**
+ * The words a key was last painted with. They live inside the key image rather than in
+ * Stream Deck's own title, which draws at one fixed size and clipped the longer labels.
+ */
 function lastTitle(context: string): string | undefined {
-  return sent.filter((m) => m.event === 'setTitle' && m.context === context).at(-1)?.payload.title;
+  const image = sent.filter((m) => m.event === 'setImage' && m.context === context).at(-1)?.payload.image;
+  if (image === undefined) return undefined;
+  const svg = decodeURIComponent(String(image).replace(/^data:image\/svg\+xml;charset=utf8,/, ''));
+  return [...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map((m) => m[1]).join('\n');
 }
 
 async function waitFor(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
@@ -111,7 +117,7 @@ describe('Stream Deck plugin', { concurrency: false }, () => {
 
   test('paints a key when it appears, and reports when the leaderboard is reachable', async () => {
     send(keyEvent('willAppear', 'KEY-READY', 'ready'));
-    await waitFor(() => sent.some((m) => m.event === 'setTitle' && m.context === 'KEY-READY' && m.payload.title === 'READY'));
+    await waitFor(() => lastTitle('KEY-READY') === 'READY');
     const image = sent.find((m) => m.event === 'setImage' && m.context === 'KEY-READY');
     assert.match(image!.payload.image, /^data:image\/svg\+xml/, 'keys get their Pac-Man artwork');
   });
@@ -130,9 +136,8 @@ describe('Stream Deck plugin', { concurrency: false }, () => {
     await fetch(`${leaderboardUrl}/api/game/start`, { method: 'POST' });
     sent.length = 0;
     send(keyEvent('keyDown', 'KEY-POWER', 'power-up'));
-    await waitFor(() => sent.filter((m) => m.event === 'setTitle' && m.context === 'KEY-POWER' && /POWER UP\n\d+s/.test(m.payload.title)).length >= 2, 6000);
-    const titles = sent.filter((m) => m.event === 'setTitle' && m.context === 'KEY-POWER').map((m) => m.payload.title);
-    assert.match(titles.at(-1)!, /POWER UP\n\d+s/);
+    await waitFor(() => sent.filter((m) => m.event === 'setImage' && m.context === 'KEY-POWER').length >= 2, 6000);
+    assert.match(lastTitle('KEY-POWER')!, /POWER UP\n\d+s/);
     await fetch(`${leaderboardUrl}/api/game/reset`, { method: 'POST' });
   });
 
@@ -228,7 +233,7 @@ describe('Stream Deck plugin', { concurrency: false }, () => {
     sent.length = 0;
     send({ ...keyEvent('didReceiveSettings', 'KEY-READY', 'ready'), payload: unreachable });
     // The key tells the operator the server is gone, without being pressed.
-    await waitFor(() => sent.some((m) => m.event === 'setTitle' && /offline/.test(m.payload.title)));
+    await waitFor(() => /offline/.test(lastTitle('KEY-READY') ?? ''));
 
     sent.length = 0;
     send({ ...keyEvent('keyDown', 'KEY-READY', 'ready'), payload: unreachable });
