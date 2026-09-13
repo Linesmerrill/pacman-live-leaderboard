@@ -6,7 +6,7 @@ import { formatTime, ordinal } from './format.js';
 import { connectLive } from './live.js';
 import { pageCount, pageForPosition, pageRange, splitColumns } from './paging.js';
 import { pixelText, pixelWidth } from './pixelfont.js';
-import { isSoundEnabled, loadAudioFiles, play, primeAudio, setIdleMusic, setLoop, setSoundEnabled, setVolume, soundForEntry } from './sounds.js';
+import { isSoundEnabled, loadAudioFiles, play, primeAudio, setIdleMusic, setLoop, setSoundEnabled, setVolume, skipTrack, soundForEntry } from './sounds.js';
 import { FRUIT_BY_RANK, GHOST_COLORS, ghost, pacman, scaredGhost, speaker } from './sprites.js';
 
 const FLASH_MS = 4_400; // matches the .fresh CSS animation (0.55s × 8)
@@ -541,6 +541,17 @@ function applyGame(game) {
     play(game.cue.name);
     const flash = FLASH_TEXT[game.cue.name];
     if (flash) showFlash(flash.text, flash);
+  }
+
+  // The NEXT/PREV keys bump an id the same way cues do, so a skip happens once per press
+  // and a repeated broadcast doesn't keep jumping tracks.
+  if (game.music && game.music.id !== state.lastMusicId) {
+    const first = state.lastMusicId === undefined;
+    state.lastMusicId = game.music.id;
+    if (!first && game.music.delta) {
+      const track = skipTrack(game.music.delta);
+      if (track) showFlash(track, { ms: 2200 });
+    }
   }
 
   document.body.dataset.gameState = game.state;

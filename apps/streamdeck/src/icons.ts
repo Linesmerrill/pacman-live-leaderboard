@@ -26,6 +26,10 @@ const ART: Record<GameCommand, (color: string) => string> = {
     `<path d="M12 30h10l13-11v38L22 46H12z" fill="${c}"/><path d="M44 28a14 14 0 0 1 0 20M52 20a26 26 0 0 1 0 36" stroke="${c}" stroke-width="5" fill="none" stroke-linecap="round"/>`,
   'volume-down': (c) =>
     `<path d="M16 30h10l13-11v38L26 46H16z" fill="${c}"/><path d="M48 28a14 14 0 0 1 0 20" stroke="${c}" stroke-width="5" fill="none" stroke-linecap="round"/>`,
+  'music-prev': (c) =>
+    `<rect x="14" y="16" width="7" height="44" rx="2" fill="${c}"/><path d="M60 16 26 38 60 60z" fill="${c}"/>`,
+  'music-next': (c) =>
+    `<path d="M12 16 46 38 12 60z" fill="${c}"/><rect x="51" y="16" width="7" height="44" rx="2" fill="${c}"/>`,
   mute: (c) =>
     `<path d="M14 30h10l13-11v38L24 46H14z" fill="${c}"/><path d="M46 28l16 20M62 28 46 48" stroke="${c}" stroke-width="5" stroke-linecap="round"/>`,
 };
@@ -47,6 +51,8 @@ const COLORS: Record<GameCommand, string> = {
   'volume-up': '#8ea2ff',
   'volume-down': '#8ea2ff',
   mute: '#8ea2ff',
+  'music-prev': '#7ee8b2',
+  'music-next': '#7ee8b2',
 };
 
 

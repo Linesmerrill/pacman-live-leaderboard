@@ -50,6 +50,8 @@ export class GameEngine {
   #startedAt: number | null = null;
   #runEndsAt: number | null = null;
   #pelletsUsed = 0;
+  /** Counts NEXT/PREV presses so a screen can tell a fresh skip from a repeated broadcast. */
+  #music = { id: 0, delta: 0 };
   #phaseTimer: NodeJS.Timeout | null = null;
   #runTimer: NodeJS.Timeout | null = null;
 
@@ -70,6 +72,7 @@ export class GameEngine {
       maxPellets: this.#options.getTiming().maxPellets,
       volume,
       soundEnabled,
+      music: this.#music,
       updatedAt: Date.now(),
     };
   }
@@ -81,6 +84,14 @@ export class GameEngine {
       const next = Math.max(0, Math.min(100, volume + (command === 'volume-up' ? VOLUME_STEP : -VOLUME_STEP)));
       this.#options.setSound({ volume: next, ...(next > 0 && command === 'volume-up' ? { soundEnabled: true } : {}) });
       this.#announce(`volume ${next}%`);
+      return { applied: true, status: this.status };
+    }
+    if (command === 'music-prev' || command === 'music-next') {
+      // The music plays on the screens, so the engine only records that a skip was asked
+      // for; the board picks it up from the broadcast and moves to the next piece.
+      const delta = command === 'music-next' ? 1 : -1;
+      this.#music = { id: this.#music.id + 1, delta };
+      this.#announce(delta > 0 ? 'next track' : 'previous track');
       return { applied: true, status: this.status };
     }
     if (command === 'mute') {

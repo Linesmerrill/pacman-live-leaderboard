@@ -51,9 +51,10 @@ describe('deck profile', { skip: hasDeck ? false : 'no Stream Deck app on this m
       assert.ok(declared.has(entry.UUID), `${entry.UUID} is not an action this plugin declares`);
     }
 
-    // Every command a runner needs during a session is on the deck. PAC-DOT is deliberately
-    // left off: the waka already blips on a loop all through a run, so the key added nothing.
-    const OFF_THE_DECK = new Set(['pac-dot']);
+    // Every command a runner needs during a session is on the deck. Some are deliberately
+    // left off: PAC-DOT duplicated the waka that loops through every run, and GHOST TAG and
+    // FRUIT gave up their keys to the background music's PREV and NEXT.
+    const OFF_THE_DECK = new Set(['pac-dot', 'ghost-tag', 'fruit']);
     const placed = new Set(Object.values(actions).map((a) => a.UUID.replace('com.pacmanmaze.controller.', '')));
     for (const command of GAME_COMMANDS) {
       if (OFF_THE_DECK.has(command)) {

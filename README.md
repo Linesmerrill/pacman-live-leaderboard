@@ -209,12 +209,14 @@ and after a FINISH. It ducks under every sound effect and stops completely once 
 never fights the waka. It has its own switch and volume slider in **Manage scores → Background
 music** (on at 35% by default), separate from the TV volume.
 
-It isn't one short loop on repeat: there are **ten different pieces of about 30 seconds each**, played
-back to back in a shuffled order — roughly five minutes before anything comes round again, which
-matters when it's running for a couple of hours. Each piece has its own key, tempo, chord movement
-and melody, and they're composed in code (`IDLE_TRACKS` in
-[`sounds.js`](apps/leaderboard/public/js/sounds.js)) rather than stored as audio, so they cost nothing
-to ship. Supplying a `gameplay-loop` file doesn't affect them.
+It isn't one short loop on repeat: there are **eight written-out songs of about a minute each** —
+nearly nine minutes before anything comes round again. Each is composed like a real song, with an
+intro, verses, a chorus that lifts above the verse, a bridge and an outro that resolves home, in
+NES-style voicing: a pulse-wave lead over a triangle bass. They're stored as notes in
+[`music.js`](apps/leaderboard/public/js/music.js) rather than as audio, so they cost nothing to ship,
+and the tests check they stay tuneful (mostly stepwise melodies, every piece ending on its key note).
+Skip back and forward with the deck's **PREV** and **NEXT** keys; the TV flashes the track name.
+Supplying a `gameplay-loop` file doesn't affect them.
 
 **Turning it off:** the speaker button next to **+ ADD PLAYER** on the TV, or **Manage scores → Sound
 effects**. The setting is saved on the server, so every screen agrees and it survives a restart. Set
@@ -267,6 +269,7 @@ press three buttons in the right order.
 | `stop-all` | Silences everything without changing the state |
 | `reset` | Back to the idle leaderboard |
 | `volume-up`, `volume-down`, `mute` | TV volume and mute |
+| `music-prev`, `music-next` | Skip the background music back or forward a track |
 
 The keys also show what's happening: POWER UP counts down on the key itself, the live step lights up,
 commands that don't apply are dimmed, and every key says `(offline)` if the leaderboard isn't running.

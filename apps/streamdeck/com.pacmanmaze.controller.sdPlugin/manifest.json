@@ -282,6 +282,40 @@
       ]
     },
     {
+      "Name": "PREV",
+      "UUID": "com.pacmanmaze.controller.music-prev",
+      "Icon": "imgs/actions/music-prev/icon",
+      "Tooltip": "Back to the previous background track.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
+      "Name": "NEXT",
+      "UUID": "com.pacmanmaze.controller.music-next",
+      "Icon": "imgs/actions/music-next/icon",
+      "Tooltip": "Skip to the next background track.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
       "Name": "Game Status",
       "UUID": "com.pacmanmaze.controller.status",
       "Icon": "imgs/actions/status/icon",

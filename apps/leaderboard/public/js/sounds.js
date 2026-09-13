@@ -1,5 +1,9 @@
 // Original arcade-style sound effects, synthesised in the browser with the Web Audio API.
 // No audio files and nothing sampled: every jingle is square/triangle waves written here.
+// The background music between runs lives in music.js.
+import { IDLE_TRACKS } from './music.js';
+
+export { IDLE_TRACKS };
 
 const MASTER_VOLUME = 0.22;
 
@@ -123,80 +127,6 @@ export const LOOPS = {
   },
 };
 
-// ---------- Background music between runs ----------
-//
-// Ten short pieces, composed here rather than stored as note-by-note data, played back to back and
-// shuffled — about five minutes before anything repeats, so a two-hour event doesn't drill one
-// eight-second loop into everyone's skull. Same ten every time (the generator is seeded), soft and
-// pentatonic so nothing clashes with the arcade sounds on top.
-
-const A4 = 440;
-const noteHz = (midi) => A4 * 2 ** ((midi - 69) / 12);
-
-/** Small deterministic PRNG, so every start-up composes the same album. */
-function seeded(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const SCALES = [
-  [0, 2, 4, 7, 9], // major pentatonic — bright
-  [0, 3, 5, 7, 10], // minor pentatonic — wistful
-  [0, 2, 5, 7, 9], // suspended flavour
-];
-/** Chord roots as semitones from the key, i.e. I – vi – IV – V and friends. */
-const PROGRESSIONS = [
-  [0, 9, 5, 7],
-  [0, 5, 9, 7],
-  [0, 7, 9, 5],
-  [0, 3, 8, 7],
-];
-const STEPS_PER_BAR = 8;
-
-/** One ~30-second piece: bass, a repeating melodic motif, and sometimes a soft arpeggio. */
-function composeTrack(index) {
-  const random = seeded(0x9e3779b9 + index * 2654435761);
-  const pick = (list) => list[Math.floor(random() * list.length)];
-
-  const stepSeconds = 0.22 + Math.round(random() * 4) * 0.02; // 0.22–0.30s per step
-  const scale = pick(SCALES);
-  const progression = pick(PROGRESSIONS);
-  const key = 57 + Math.floor(random() * 8); // A3 … E4
-  const bars = Math.max(8, Math.round(30 / (stepSeconds * STEPS_PER_BAR)));
-  const withArp = random() < 0.5;
-
-  // An 8-step motif, reused every bar so the ear has something to hold on to.
-  const motif = Array.from({ length: STEPS_PER_BAR }, () => {
-    if (random() < 0.38) return null; // rests keep it from feeling busy
-    return scale[Math.floor(random() * scale.length)] + (random() < 0.22 ? 12 : 0);
-  });
-
-  const steps = [];
-  for (let bar = 0; bar < bars; bar++) {
-    const chord = progression[bar % progression.length];
-    const quiet = bar % 8 === 7; // a breath every eight bars
-    for (let step = 0; step < STEPS_PER_BAR; step++) {
-      const note = motif[step];
-      // Vary the motif slightly in the second half of each phrase.
-      const shifted = note !== null && bar % 4 === 3 && random() < 0.3 ? note + 2 : note;
-      steps.push({
-        lead: quiet || shifted === null ? null : noteHz(key + chord + shifted),
-        // Kept above ~110 Hz: small TV speakers just turn anything lower into rumble.
-        bass: step % 4 === 0 ? noteHz(key + chord - 12 + (step === 0 ? 0 : 12)) : null,
-        arp: withArp && !quiet && step % 2 === 1 ? noteHz(key + chord + scale[(step + bar) % scale.length] + 12) : null,
-      });
-    }
-  }
-  return { stepSeconds, steps, seconds: Math.round(steps.length * stepSeconds) };
-}
-
-export const IDLE_TRACKS = Array.from({ length: 10 }, (_, i) => composeTrack(i));
-
 /** Which effect fits a newly added run. Pure, so it's covered by the tests. */
 export function soundForEntry({ isNewHighScore, rank, position, rowsPerColumn = 10 }) {
   if (isNewHighScore) return 'highScore';
@@ -284,7 +214,10 @@ function ensureContext() {
   // or muted on its own, without touching anything else.
   idleGain = audio.createGain();
   idleGain.gain.value = idleMusicGain();
-  idleGain.connect(master);
+  const idleTone = audio.createBiquadFilter();
+  idleTone.type = 'lowpass';
+  idleTone.frequency.value = 2600;
+  idleGain.connect(idleTone).connect(master);
   return audio;
 }
 
@@ -397,11 +330,13 @@ function scheduleAlbumSteps() {
   if (!ctx) return;
   while (loop.nextTime < ctx.currentTime + LOOKAHEAD_SECONDS) {
     const track = IDLE_TRACKS[album.order[album.index]];
-    const { lead, bass, arp } = track.steps[album.step];
+    const { lead, leadSteps, bass, bassSteps, arp } = track.steps[album.step];
     const at = Math.max(loop.nextTime, ctx.currentTime + 0.02);
-    if (lead) scheduleNote(ctx, { freq: lead, at, dur: track.stepSeconds * 1.8, type: 'triangle', gain: 0.3, destination: idleGain });
-    if (bass) scheduleNote(ctx, { freq: bass, at, dur: track.stepSeconds * 3.2, type: 'sine', gain: 0.55, destination: idleGain });
-    if (arp) scheduleNote(ctx, { freq: arp, at, dur: track.stepSeconds * 0.8, type: 'triangle', gain: 0.12, destination: idleGain });
+    // NES voicing: a pulse lead over a triangle bass. The lead is quiet because a square
+    // wave carries much further than the triangle it replaced.
+    if (lead) scheduleNote(ctx, { freq: lead, at, dur: track.stepSeconds * Math.max(1, leadSteps) * 0.92, type: 'square', gain: 0.15, destination: idleGain });
+    if (bass) scheduleNote(ctx, { freq: bass, at, dur: track.stepSeconds * (bassSteps ?? 2) * 0.95, type: 'triangle', gain: 0.42, destination: idleGain });
+    if (arp) scheduleNote(ctx, { freq: arp, at, dur: track.stepSeconds * 0.75, type: 'square', gain: 0.05, destination: idleGain });
     loop.nextTime += track.stepSeconds;
     album.step++;
     if (album.step >= track.steps.length) {
@@ -501,4 +436,25 @@ export function setLoop(name) {
 
 export function currentLoop() {
   return loop.name;
+}
+
+/** The piece playing right now, or null when the background music isn't running. */
+export function currentTrack() {
+  if (loop.name !== 'idle' || !album.order.length) return null;
+  return IDLE_TRACKS[album.order[album.index]].name;
+}
+
+/**
+ * Jump to the next or previous piece (the deck's NEXT/PREV keys).
+ * Returns the new track's name, or null when the music isn't playing.
+ */
+export function skipTrack(delta) {
+  if (loop.name !== 'idle' || !album.order.length) return null;
+  const ctx = ensureContext();
+  if (!ctx) return null;
+  album.index = (album.index + delta + album.order.length) % album.order.length;
+  album.step = 0;
+  loop.nextTime = ctx.currentTime + 0.05;
+  scheduleAlbumSteps();
+  return currentTrack();
 }

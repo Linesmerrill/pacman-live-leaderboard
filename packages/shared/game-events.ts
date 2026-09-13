@@ -20,6 +20,8 @@ export const GAME_COMMANDS = [
   'volume-up',
   'volume-down',
   'mute',
+  'music-prev',
+  'music-next',
 ] as const;
 export type GameCommand = (typeof GAME_COMMANDS)[number];
 
@@ -53,6 +55,8 @@ export interface GameStatus {
   /** Master volume for the TV, 0–100. */
   volume: number;
   soundEnabled: boolean;
+  /** Bumped by the NEXT/PREV keys; the screens skip when `id` changes. */
+  music: { id: number; delta: number };
   updatedAt: number;
 }
 
@@ -157,6 +161,8 @@ export const COMMAND_LABELS: Record<GameCommand, string> = {
   'volume-up': 'VOL +',
   'volume-down': 'VOL −',
   mute: 'MUTE',
+  'music-prev': 'PREV',
+  'music-next': 'NEXT',
 };
 
 /** One line per key, shown in the Stream Deck action list and in the key's settings panel. */
@@ -176,4 +182,6 @@ export const COMMAND_DESCRIPTIONS: Record<GameCommand, string> = {
   'volume-up': 'TV sound up.',
   'volume-down': 'TV sound down.',
   mute: 'Toggle the TV sound on and off.',
+  'music-prev': 'Back to the previous background track.',
+  'music-next': 'Skip to the next background track.',
 };

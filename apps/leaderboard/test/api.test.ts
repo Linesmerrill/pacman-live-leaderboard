@@ -261,6 +261,26 @@ describe('HTTP API', () => {
     assert.equal(res.body.status.state, 'idle');
   });
 
+  test('NEXT and PREV ask the screens to skip tracks, once per press', async () => {
+    const before = (await h.call('GET', '/api/game')).body.game;
+    const stream = await openStream(h.base);
+    await stream.next();
+
+    const next = await h.call('POST', '/api/game/music-next');
+    assert.equal(next.body.applied, true);
+    assert.equal(next.body.status.music.delta, 1);
+    assert.equal(next.body.status.music.id, before.music.id + 1, 'each press gets a fresh id so screens skip exactly once');
+    const pushed = await stream.next();
+    assert.equal(pushed.game.music.id, before.music.id + 1, 'the TV hears about it straight away');
+    stream.close();
+
+    const prev = await h.call('POST', '/api/game/music-prev');
+    assert.equal(prev.body.status.music.delta, -1);
+    assert.equal(prev.body.status.music.id, before.music.id + 2);
+    // Skipping a song is not a game event: a run in progress must not notice.
+    assert.equal(prev.body.status.state, before.state);
+  });
+
   test('volume and mute commands update the saved settings', async () => {
     await h.call('PUT', '/api/settings', { soundEnabled: true, soundVolume: 50 });
     await h.call('POST', '/api/game/volume-up');
