@@ -51,9 +51,9 @@ album: shuffled, back to back, with the deck's **PREV** and **NEXT** keys skippi
 TV flashing the name (taken from the file name, so `Where_the_Map_Ends.mp3` shows as
 `WHERE THE MAP ENDS`). A round interrupts the song and the next break picks it up where it stopped.
 
-Finished recordings are mastered far louder than the built-in music, so songs are turned down
-(`SONG_TRIM` in `apps/leaderboard/public/js/sounds.js`) and passed through a gentle leveller before the
-**Background music** volume slider applies. If they still sit too far forward, lower that slider.
+Songs play at their own recorded level — measured, that lands about level with the built-in music —
+and skip the softening filter the built-in chiptune goes through, so they keep their treble. How loud
+they sit under the room is the **Background music** volume slider in Manage scores.
 
 Songs are yours to supply and stay on this Mac: like everything else in this folder, they're ignored
 by git.

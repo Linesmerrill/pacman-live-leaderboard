@@ -147,6 +147,8 @@ let volume = 80;
 let idleEnabled = true;
 let idleVolume = 35;
 let idleGain = null;
+/** Softens the built-in chiptune's square waves; recorded songs bypass it. */
+let idleSynth = null;
 const loop = { name: 'none', timer: null, step: 0, nextTime: 0 };
 const album = { order: [], index: 0, step: 0, songs: false };
 
@@ -163,14 +165,14 @@ const waka = { timer: null };
 const songs = [];
 
 /**
- * Supplied songs are finished, mastered recordings — far louder than the little synth pieces, and
- * this is music meant to sit under a room full of kids, not over it. Songs are brought down by
- * this much before the between-runs volume slider applies.
+ * Songs play at their recorded level. Measured in the browser, a supplied master lands at about
+ * the same loudness as the built-in pieces (-13.5 dB against -13), and anything above 1 pushes its
+ * peaks past 0 dB and distorts. How far under the room they sit is the between-runs volume slider.
  */
-export const SONG_TRIM = 0.4;
+export const SONG_TRIM = 1;
 
 /** One <audio> element, streamed rather than decoded: a three-minute song is ~60 MB as samples. */
-const songPlayer = { element: null };
+const songPlayer = { element: null, blocked: false };
 
 function ensureSongPlayer(ctx) {
   if (songPlayer.element) return songPlayer.element;
@@ -178,19 +180,30 @@ function ensureSongPlayer(ctx) {
   element.preload = 'auto';
   const trim = ctx.createGain();
   trim.gain.value = SONG_TRIM;
-  // Evens out loud and quiet passages, and one song against the next, so nothing jumps out.
-  const leveller = ctx.createDynamicsCompressor();
-  leveller.threshold.value = -26;
-  leveller.knee.value = 12;
-  leveller.ratio.value = 3;
-  leveller.attack.value = 0.05;
-  leveller.release.value = 0.4;
-  ctx.createMediaElementSource(element).connect(trim).connect(leveller).connect(idleGain);
+  // Straight into the between-runs volume: a recording must not go through the filter that
+  // softens the built-in chiptune, or it loses its treble and sounds muffled and far away.
+  ctx.createMediaElementSource(element).connect(trim).connect(idleGain);
   element.addEventListener('ended', () => {
     if (loop.name === 'idle' && album.songs) startSong(album.index + 1);
   });
   songPlayer.element = element;
   return element;
+}
+
+/**
+ * An ordinary browser tab refuses to start an <audio> element until someone has clicked or pressed
+ * a key on the page. Remember that it was refused, so the next click can start it (see primeAudio).
+ */
+function playSong(element) {
+  void element
+    .play()
+    .then(() => {
+      songPlayer.blocked = false;
+    })
+    .catch((err) => {
+      songPlayer.blocked = true;
+      console.warn('A background song is waiting for a click or key press on the page before it can play.', err?.name ?? err);
+    });
 }
 
 function startSong(index, { resume = false } = {}) {
@@ -201,7 +214,7 @@ function startSong(index, { resume = false } = {}) {
   const song = songs[album.order[album.index]];
   // Setting the source starts the song from the top; resuming keeps the position it paused at.
   if (!resume || element.src !== new URL(song.url, location.href).href) element.src = song.url;
-  void element.play().catch((err) => console.warn('A background song could not start yet.', err));
+  playSong(element);
 }
 
 /**
@@ -271,10 +284,11 @@ function ensureContext() {
   // or muted on its own, without touching anything else.
   idleGain = audio.createGain();
   idleGain.gain.value = idleMusicGain();
-  const idleTone = audio.createBiquadFilter();
-  idleTone.type = 'lowpass';
-  idleTone.frequency.value = 2600;
-  idleGain.connect(idleTone).connect(master);
+  idleGain.connect(master);
+  idleSynth = audio.createBiquadFilter();
+  idleSynth.type = 'lowpass';
+  idleSynth.frequency.value = 2600;
+  idleSynth.connect(idleGain);
   return audio;
 }
 
@@ -285,6 +299,9 @@ function ensureContext() {
 export function primeAudio() {
   const ctx = ensureContext();
   if (ctx && ctx.state === 'suspended') void ctx.resume();
+  // The first click or key press is also what lets a refused song start.
+  const element = songPlayer.element;
+  if (element && element.paused && loop.name === 'idle' && album.songs) playSong(element);
 }
 
 function masterGain() {
@@ -391,9 +408,9 @@ function scheduleAlbumSteps() {
     const at = Math.max(loop.nextTime, ctx.currentTime + 0.02);
     // NES voicing: a pulse lead over a triangle bass. The lead is quiet because a square
     // wave carries much further than the triangle it replaced.
-    if (lead) scheduleNote(ctx, { freq: lead, at, dur: track.stepSeconds * Math.max(1, leadSteps) * 0.92, type: 'square', gain: 0.15, destination: idleGain });
-    if (bass) scheduleNote(ctx, { freq: bass, at, dur: track.stepSeconds * (bassSteps ?? 2) * 0.95, type: 'triangle', gain: 0.42, destination: idleGain });
-    if (arp) scheduleNote(ctx, { freq: arp, at, dur: track.stepSeconds * 0.75, type: 'square', gain: 0.05, destination: idleGain });
+    if (lead) scheduleNote(ctx, { freq: lead, at, dur: track.stepSeconds * Math.max(1, leadSteps) * 0.92, type: 'square', gain: 0.15, destination: idleSynth });
+    if (bass) scheduleNote(ctx, { freq: bass, at, dur: track.stepSeconds * (bassSteps ?? 2) * 0.95, type: 'triangle', gain: 0.42, destination: idleSynth });
+    if (arp) scheduleNote(ctx, { freq: arp, at, dur: track.stepSeconds * 0.75, type: 'square', gain: 0.05, destination: idleSynth });
     loop.nextTime += track.stepSeconds;
     album.step++;
     if (album.step >= track.steps.length) {
@@ -507,6 +524,18 @@ export function setLoop(name) {
 
 export function currentLoop() {
   return loop.name;
+}
+
+/** What the between-runs music is doing right now, for diagnostics and the tests. */
+export function backgroundStatus() {
+  const idle = loop.name === 'idle';
+  return {
+    loop: loop.name,
+    source: !idle ? 'off' : album.songs ? 'songs' : 'built-in',
+    track: currentTrack(),
+    playing: idle && (album.songs ? Boolean(songPlayer.element && !songPlayer.element.paused) : true),
+    waitingForClick: idle && album.songs && songPlayer.blocked,
+  };
 }
 
 /** The piece playing right now, or null when the background music isn't running. */
