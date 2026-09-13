@@ -111,6 +111,7 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
   const audio = readAudioManifest(audioDir);
   const audioCount = Object.keys(audio.cues).length + Object.keys(audio.loops).length;
   if (audioCount > 0) log(`* using ${audioCount} sound file(s) from ${audioDir}`);
+  if (audio.music.length > 0) log(`* ${audio.music.length} song(s) for between runs from ${audioDir}/music`);
 
   const game = new GameEngine({
     getTiming: () => {
@@ -316,13 +317,38 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
         const file = resolveAudioFile(audioDir, pathname.slice('/audio/'.length));
         if (file) {
           const body = await readFile(file);
+          const type = contentTypeFor(file) ?? 'application/octet-stream';
+          // Songs are streamed by an <audio> element, which asks for byte ranges; answering them
+          // is what lets a song pick up where it left off after a round.
+          const range = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range ?? '');
+          if (range && (range[1] || range[2])) {
+            const size = body.length;
+            const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
+            const end = range[1] && range[2] ? Math.min(Number(range[2]), size - 1) : size - 1;
+            if (start >= size || end < start) {
+              res.writeHead(416, { ...SECURITY_HEADERS, 'Content-Range': `bytes */${size}` });
+              res.end();
+              return;
+            }
+            res.writeHead(206, {
+              ...SECURITY_HEADERS,
+              'Content-Type': type,
+              'Content-Length': end - start + 1,
+              'Content-Range': `bytes ${start}-${end}/${size}`,
+              'Accept-Ranges': 'bytes',
+              'Cache-Control': 'no-cache',
+            });
+            res.end(req.method === 'HEAD' ? undefined : body.subarray(start, end + 1));
+            return;
+          }
           res.writeHead(200, {
             ...SECURITY_HEADERS,
-            'Content-Type': contentTypeFor(file) ?? 'application/octet-stream',
+            'Content-Type': type,
             'Content-Length': body.length,
+            'Accept-Ranges': 'bytes',
             'Cache-Control': 'no-cache',
           });
-          res.end(body);
+          res.end(req.method === 'HEAD' ? undefined : body);
           return;
         }
       }

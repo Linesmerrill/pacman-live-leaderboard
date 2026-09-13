@@ -37,7 +37,28 @@ Two optional background tracks, looped continuously:
 Short files work best: the dot sound repeats every `wakaIntervalMs` (150 ms by default, in
 `config.json`), so anything longer than about a quarter of a second will overlap itself.
 
-## After adding or changing files
+## Songs between runs
+
+Put songs in the `music/` folder inside this one — any name, any of the formats above:
+
+```
+assets/audio/music/Where_the_Map_Ends.mp3
+assets/audio/music/Some Other Song.m4a
+```
+
+When the folder has at least one song, those play between runs instead of the built-in chiptune
+album: shuffled, back to back, with the deck's **PREV** and **NEXT** keys skipping between them and the
+TV flashing the name (taken from the file name, so `Where_the_Map_Ends.mp3` shows as
+`WHERE THE MAP ENDS`). A round interrupts the song and the next break picks it up where it stopped.
+
+Finished recordings are mastered far louder than the built-in music, so songs are turned down
+(`SONG_TRIM` in `apps/leaderboard/public/js/sounds.js`) and passed through a gentle leveller before the
+**Background music** volume slider applies. If they still sit too far forward, lower that slider.
+
+Songs are yours to supply and stay on this Mac: like everything else in this folder, they're ignored
+by git.
+
+
 
 Restart the app (`npm start`) — the folder is scanned at startup — then reload the TV page.
 Check what was picked up at <http://localhost:3000/api/audio>.

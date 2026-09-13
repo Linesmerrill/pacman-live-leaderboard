@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 import { IDLE_TRACKS, SONGS, compile } from '../public/js/music.js';
 
+type Bar = [number | null, number][];
+/** A song's sections by name — the songbook is plain JS, so give the lookup a shape. */
+const sectionOf = (song: (typeof SONGS)[number], name: string) => (song.sections as unknown as Record<string, { melody: Bar[] }>)[name];
+
 /**
  * The first version of this music chose notes at random from a pentatonic scale, which is
  * exactly what it sounded like. These tests are about the qualities that make the difference
@@ -27,7 +31,7 @@ describe('background music between runs', () => {
       assert.ok(song.form.at(-1) === 'outro', `${song.name} just stops instead of ending`);
 
       // The chorus should sit higher than the verse — that's what makes it lift.
-      const top = (name: string) => Math.max(...song.sections[name].melody.flat().map(([d]: [number | null, number]) => d ?? -99));
+      const top = (name: string) => Math.max(...sectionOf(song, name).melody.flat().map(([d]) => d ?? -99));
       assert.ok(top('chorus') > top('verse'), `${song.name}'s chorus doesn't rise above its verse`);
     }
   });
@@ -46,9 +50,9 @@ describe('background music between runs', () => {
 
   test('every piece ends on its key note', () => {
     for (const song of SONGS) {
-      const outro = song.sections[song.form.at(-1)!];
+      const outro = sectionOf(song, song.form.at(-1)!);
       const lastBar = outro.melody.at(-1)!;
-      const [degree] = lastBar.at(-1)! as [number | null, number];
+      const [degree] = lastBar.at(-1)!;
       assert.equal(degree === null ? null : ((degree % 7) + 7) % 7, 0, `${song.name} doesn't resolve home`);
     }
   });

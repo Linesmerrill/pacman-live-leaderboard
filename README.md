@@ -218,6 +218,12 @@ and the tests check they stay tuneful (mostly stepwise melodies, every piece end
 Skip back and forward with the deck's **PREV** and **NEXT** keys; the TV flashes the track name.
 Supplying a `gameplay-loop` file doesn't affect them.
 
+**Your own songs:** drop MP3s (or `.m4a`, `.ogg`, `.wav`) into `assets/audio/music/` and restart, and they
+replace the built-in album — shuffled, back to back, still skippable with PREV and NEXT, with the TV
+showing each song's name. A finished recording is mastered far louder than background music should be,
+so songs are turned down and levelled on the way in; they come out about 5 dB under the built-in
+pieces. Details in [`assets/audio/README.md`](assets/audio/README.md).
+
 **Turning it off:** the speaker button next to **+ ADD PLAYER** on the TV, or **Manage scores → Sound
 effects**. The setting is saved on the server, so every screen agrees and it survives a restart. Set
 `soundEnabled` in `config.json` to change the starting value for a brand-new database.

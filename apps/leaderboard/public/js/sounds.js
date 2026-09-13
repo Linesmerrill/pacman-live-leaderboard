@@ -148,7 +148,7 @@ let idleEnabled = true;
 let idleVolume = 35;
 let idleGain = null;
 const loop = { name: 'none', timer: null, step: 0, nextTime: 0 };
-const album = { order: [], index: 0, step: 0 };
+const album = { order: [], index: 0, step: 0, songs: false };
 
 // ---------- Your own sound files (assets/audio) ----------
 
@@ -156,6 +156,53 @@ const album = { order: [], index: 0, step: 0 };
 const files = new Map();
 let wakaIntervalMs = 200;
 const waka = { timer: null };
+
+// ---------- Your own songs between runs (assets/audio/music) ----------
+
+/** Songs supplied for between runs. When any exist they replace the written-out album. */
+const songs = [];
+
+/**
+ * Supplied songs are finished, mastered recordings — far louder than the little synth pieces, and
+ * this is music meant to sit under a room full of kids, not over it. Songs are brought down by
+ * this much before the between-runs volume slider applies.
+ */
+export const SONG_TRIM = 0.4;
+
+/** One <audio> element, streamed rather than decoded: a three-minute song is ~60 MB as samples. */
+const songPlayer = { element: null };
+
+function ensureSongPlayer(ctx) {
+  if (songPlayer.element) return songPlayer.element;
+  const element = new Audio();
+  element.preload = 'auto';
+  const trim = ctx.createGain();
+  trim.gain.value = SONG_TRIM;
+  // Evens out loud and quiet passages, and one song against the next, so nothing jumps out.
+  const leveller = ctx.createDynamicsCompressor();
+  leveller.threshold.value = -26;
+  leveller.knee.value = 12;
+  leveller.ratio.value = 3;
+  leveller.attack.value = 0.05;
+  leveller.release.value = 0.4;
+  ctx.createMediaElementSource(element).connect(trim).connect(leveller).connect(idleGain);
+  element.addEventListener('ended', () => {
+    if (loop.name === 'idle' && album.songs) startSong(album.index + 1);
+  });
+  songPlayer.element = element;
+  return element;
+}
+
+function startSong(index, { resume = false } = {}) {
+  const ctx = ensureContext();
+  if (!ctx || !album.order.length) return;
+  const element = ensureSongPlayer(ctx);
+  album.index = (index + album.order.length) % album.order.length;
+  const song = songs[album.order[album.index]];
+  // Setting the source starts the song from the top; resuming keeps the position it paused at.
+  if (!resume || element.src !== new URL(song.url, location.href).href) element.src = song.url;
+  void element.play().catch((err) => console.warn('A background song could not start yet.', err));
+}
 
 /**
  * Load the event's own sounds. Anything that loads replaces the built-in blip for that cue;
@@ -181,6 +228,16 @@ export async function loadAudioFiles(manifest, { wakaMs = 200 } = {}) {
       }
     }),
   );
+  const supplied = manifest.music ?? [];
+  if (supplied.length) {
+    songs.splice(0, songs.length, ...supplied);
+    // The built-in album may already be playing from before the list arrived: switch to the songs.
+    if (loop.name === 'idle' && !album.songs) {
+      stopLoop();
+      loop.name = 'none';
+      setLoop('idle');
+    }
+  }
   return files;
 }
 
@@ -371,6 +428,7 @@ function scheduleLoopSteps() {
 function stopLoop() {
   clearInterval(loop.timer);
   clearInterval(waka.timer);
+  songPlayer.element?.pause();
   loop.timer = null;
   waka.timer = null;
   loop.track?.stop();
@@ -402,6 +460,19 @@ export function setLoop(name) {
       return;
     }
     idleGain.gain.value = idleMusicGain();
+    if (songs.length) {
+      // Your songs: shuffled once, then each round's break carries on from where the last one
+      // was interrupted rather than restarting the same song every time.
+      const resume = album.songs && album.order.length === songs.length;
+      if (!resume) {
+        album.order = songs.map((_, i) => i).sort(() => Math.random() - 0.5);
+        album.index = 0;
+      }
+      album.songs = true;
+      startSong(album.index, { resume });
+      return;
+    }
+    album.songs = false;
     // Shuffle the running order, and start somewhere in it, so the night doesn't always open
     // with the same piece.
     album.order = IDLE_TRACKS.map((_, i) => i).sort(() => Math.random() - 0.5);
@@ -441,7 +512,7 @@ export function currentLoop() {
 /** The piece playing right now, or null when the background music isn't running. */
 export function currentTrack() {
   if (loop.name !== 'idle' || !album.order.length) return null;
-  return IDLE_TRACKS[album.order[album.index]].name;
+  return album.songs ? songs[album.order[album.index]].name : IDLE_TRACKS[album.order[album.index]].name;
 }
 
 /**
@@ -452,6 +523,10 @@ export function skipTrack(delta) {
   if (loop.name !== 'idle' || !album.order.length) return null;
   const ctx = ensureContext();
   if (!ctx) return null;
+  if (album.songs) {
+    startSong(album.index + delta);
+    return currentTrack();
+  }
   album.index = (album.index + delta + album.order.length) % album.order.length;
   album.step = 0;
   loop.nextTime = ctx.currentTime + 0.05;
