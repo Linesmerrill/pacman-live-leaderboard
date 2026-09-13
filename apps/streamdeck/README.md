@@ -17,6 +17,7 @@ drag the one you want onto the deck — there is nothing to configure, each key 
 | **START** | Starts the run, run clock and gameplay music |
 | **POWER UP** | Power-mode music and blue ghosts for 10 seconds, then back to normal play automatically |
 | **GHOST TAG / FRUIT / PAC-DOT** | One-shot sounds during a run |
+| **SPOTLIGHT** | Puts the player who just scored on the TV and holds their page there, for the photo |
 | **HIGH SCORE** | Plays the high-score fanfare on demand |
 | **FINISH** | Ends the run: music stops, `FINISH!` on the TV |
 | **STOP ALL** | Silences everything without changing the state |
@@ -42,10 +43,13 @@ npm run streamdeck:profile   # optional: a ready-made 15-key layout
 Mac. Double-click it and confirm the import to get every key placed at once:
 
 ```
-READY   3·2·1   START    POWER UP    FINISH
-GHOST   FRUIT   PAC-DOT  HIGH SCORE  RESET
-VOL −   VOL +   MUTE     STOP ALL    STATUS
+READY   3·2·1   START      POWER UP    FINISH
+GHOST   FRUIT   SPOTLIGHT  HIGH SCORE  RESET
+VOL −   VOL +   MUTE       STOP ALL    STATUS
 ```
+
+PAC-DOT is left off the layout on purpose — the waka already blips on a loop all through a run, so
+the key added nothing. It's still in the actions list if you want it somewhere.
 
 Prefer to arrange it yourself? Skip the profile and drag the keys over one at a time.
 

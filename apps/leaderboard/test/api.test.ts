@@ -233,6 +233,34 @@ describe('HTTP API', () => {
     assert.equal((await h.call('POST', '/api/game/nonsense')).status, 404);
   });
 
+  test('SPOTLIGHT puts the player who just finished on the TV', async () => {
+    // The controller can't name a player, so the key always means "whoever just scored".
+    const fresh = await start();
+    const empty = await fresh.call('POST', '/api/game/spotlight');
+    assert.equal(empty.status, 200, 'an empty board must not error at the operator');
+    assert.equal(empty.body.applied, false);
+    await fresh.stop();
+
+    await h.call('POST', '/api/scores', { initials: 'AAA', score: 40 });
+    await h.call('POST', '/api/scores', { initials: 'ZZZ', score: 5 });
+
+    const stream = await openStream(h.base);
+    await stream.next();
+    const res = await h.call('POST', '/api/game/spotlight');
+    assert.equal(res.body.applied, true);
+    // The newest score, not the highest: ZZZ came last and is the one holding the camera.
+    assert.equal(res.body.entry.initials, 'ZZZ');
+    assert.equal(res.body.entry.rank, 2);
+
+    const pushed = await stream.next();
+    assert.equal(pushed.reason, 'spotlight');
+    assert.equal(pushed.spotlight.entry.initials, 'ZZZ');
+    stream.close();
+
+    // It shows a player; it must not disturb a run that's under way.
+    assert.equal(res.body.status.state, 'idle');
+  });
+
   test('volume and mute commands update the saved settings', async () => {
     await h.call('PUT', '/api/settings', { soundEnabled: true, soundVolume: 50 });
     await h.call('POST', '/api/game/volume-up');

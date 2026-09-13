@@ -14,6 +14,9 @@ const ART: Record<GameCommand, (color: string) => string> = {
     `<path d="M24 46c4-14 14-24 26-31M46 48c-1-13 2-24 4-33" stroke="#c97a2c" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="24" cy="50" r="11" fill="${c}"/><circle cx="46" cy="52" r="11" fill="${c}"/>`,
   'pac-dot': (c) => `<circle cx="36" cy="38" r="9" fill="${c}"/>`,
   'high-score': (c) => `<path d="M36 12l7 18 19 1-15 12 5 19-16-11-16 11 5-19-15-12 19-1z" fill="${c}"/>`,
+  // A camera: this key exists so the kid can photograph where they landed.
+  spotlight: (c) =>
+    `<rect x="8" y="22" width="56" height="36" rx="6" fill="none" stroke="${c}" stroke-width="5"/><path d="M25 22l5-8h12l5 8" fill="none" stroke="${c}" stroke-width="5" stroke-linejoin="round"/><circle cx="36" cy="40" r="11" fill="none" stroke="${c}" stroke-width="5"/>`,
   finish: (c) =>
     `<path d="M18 14v48" stroke="${c}" stroke-width="5"/><g fill="${c}"><rect x="24" y="16" width="11" height="11"/><rect x="46" y="16" width="11" height="11"/><rect x="35" y="27" width="11" height="11"/><rect x="24" y="38" width="11" height="11"/><rect x="46" y="38" width="11" height="11"/></g>`,
   'stop-all': (c) => `<rect x="18" y="20" width="36" height="36" rx="5" fill="${c}"/>`,
@@ -37,6 +40,7 @@ const COLORS: Record<GameCommand, string> = {
   fruit: '#ff5a5a',
   'pac-dot': '#ffb8ae',
   'high-score': '#ffe135',
+  spotlight: '#ff8ae2',
   finish: '#3cf2ff',
   'stop-all': '#ff4d6d',
   reset: '#ff9f43',

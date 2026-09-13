@@ -60,8 +60,8 @@ export class GameClient {
         streamDeck.logger.warn(`Command ${command} failed: HTTP ${res.status}`);
         return false;
       }
-      const body = (await res.json()) as { status: GameStatus };
-      this.#status = body.status;
+      const body = (await res.json()) as { status?: GameStatus };
+      if (body.status) this.#status = body.status;
       this.#emit();
       return true;
     } catch (err) {

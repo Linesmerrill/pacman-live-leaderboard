@@ -196,6 +196,15 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
       if (!GAME_COMMANDS.includes(command)) {
         throw new HttpError(404, 'unknown_command', `Unknown game command "${command}". Try one of: ${GAME_COMMANDS.join(', ')}.`);
       }
+      // SPOTLIGHT isn't a game state at all: it puts the player who just finished on the TV.
+      // The controller has no way to name one, so it always means the newest score.
+      if (command === 'spotlight') {
+        const { latest } = service.snapshot();
+        if (!latest) return sendJson(res, 200, { command, applied: false, reason: 'Nobody is on the board yet.', status: game.status });
+        log(`* showing ${latest.initials} (${latest.rank}) on the TV`);
+        broadcast('spotlight', { spotlight: { entry: latest } });
+        return sendJson(res, 200, { command, applied: true, entry: latest, status: game.status });
+      }
       const result = game.command(command);
       // `applied: false` = the command didn't fit the current state (e.g. POWER UP before START).
       // It's not an error: a controller button should never blow up in the operator's face.

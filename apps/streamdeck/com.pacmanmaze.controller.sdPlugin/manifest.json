@@ -163,6 +163,23 @@
       ]
     },
     {
+      "Name": "SPOTLIGHT",
+      "UUID": "com.pacmanmaze.controller.spotlight",
+      "Icon": "imgs/actions/spotlight/icon",
+      "Tooltip": "Put the player who just finished on the TV, and hold their page for a photo.",
+      "PropertyInspectorPath": "ui/game-key.html",
+      "Controllers": [
+        "Keypad"
+      ],
+      "States": [
+        {
+          "Image": "imgs/actions/game-key/key",
+          "TitleAlignment": "bottom",
+          "FontSize": "10"
+        }
+      ]
+    },
+    {
       "Name": "FINISH",
       "UUID": "com.pacmanmaze.controller.finish",
       "Icon": "imgs/actions/finish/icon",

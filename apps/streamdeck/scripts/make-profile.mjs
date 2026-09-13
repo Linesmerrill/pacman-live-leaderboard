@@ -25,7 +25,7 @@ const OUT = path.join(ROOT, 'profiles', `${PROFILE_NAME}.streamDeckProfile`);
  */
 const LAYOUT = [
   'ready', 'countdown', 'start', 'power-up', 'finish',
-  'ghost-tag', 'fruit', 'pac-dot', 'high-score', 'reset',
+  'ghost-tag', 'fruit', 'spotlight', 'high-score', 'reset',
   'volume-down', 'volume-up', 'mute', 'stop-all', 'status',
 ];
 

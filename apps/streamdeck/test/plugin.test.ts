@@ -194,6 +194,23 @@ describe('Stream Deck plugin', { concurrency: false }, () => {
     await fetch(`${leaderboardUrl}/api/game/reset`, { method: 'POST' });
   });
 
+  test('the SPOTLIGHT key shows whoever scored last, and dims when nobody has', async () => {
+    // Nothing on the board yet in this fixture's game, so the key should be pressable but dim.
+    sent.length = 0;
+    send(keyEvent('willAppear', 'SPOT-KEY', '', uuidFor('spotlight')));
+    await waitFor(() => lastTitle('SPOT-KEY') !== undefined);
+    assert.equal(lastTitle('SPOT-KEY'), 'SPOTLIGHT');
+
+    await fetch(`${leaderboardUrl}/api/scores`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ initials: 'PIC', score: 7 }),
+    });
+    sent.length = 0;
+    send(keyEvent('keyDown', 'SPOT-KEY', '', uuidFor('spotlight')));
+    await waitFor(() => sent.some((m) => m.event === 'showOk'), 4000);
+  });
+
   test('a key with no address does not disconnect the keys that have one', async () => {
     // Fifteen keys appear at start-up and only one of them carries the address;
     // the others must not reset the plugin back to its default server.

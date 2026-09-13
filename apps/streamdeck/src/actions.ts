@@ -174,7 +174,8 @@ async function paint(id: string): Promise<void> {
   } else {
     image = keyImage({
       command,
-      dimmed: Boolean(AVAILABLE_IN[command] && !AVAILABLE_IN[command]!.includes(state)),
+      // SPOTLIGHT has nobody to show until a score has been entered.
+      dimmed: command === 'spotlight' ? gameClient.players === 0 : Boolean(AVAILABLE_IN[command] && !AVAILABLE_IN[command]!.includes(state)),
       active: Boolean(ACTIVE_IN[command]?.includes(state)),
       offline,
     });

@@ -262,6 +262,7 @@ press three buttons in the right order.
 | `power-up` | Power mode, and adds time to the run (see Run timer below) |
 | `ghost-tag`, `fruit`, `pac-dot` | One-shot sounds during a run |
 | `high-score` | Plays the high-score fanfare on demand |
+| `spotlight` | Puts the player who just scored on the TV and holds their page for a photo |
 | `finish` | Ends the run: music stops, `FINISH!` on the TV |
 | `stop-all` | Silences everything without changing the state |
 | `reset` | Back to the idle leaderboard |

@@ -51,8 +51,16 @@ describe('deck profile', { skip: hasDeck ? false : 'no Stream Deck app on this m
       assert.ok(declared.has(entry.UUID), `${entry.UUID} is not an action this plugin declares`);
     }
 
-    // Every command a runner needs during a session is on the deck, not just some of them.
+    // Every command a runner needs during a session is on the deck. PAC-DOT is deliberately
+    // left off: the waka already blips on a loop all through a run, so the key added nothing.
+    const OFF_THE_DECK = new Set(['pac-dot']);
     const placed = new Set(Object.values(actions).map((a) => a.UUID.replace('com.pacmanmaze.controller.', '')));
-    for (const command of GAME_COMMANDS) assert.ok(placed.has(command), `${COMMAND_LABELS[command]} is missing from the layout`);
+    for (const command of GAME_COMMANDS) {
+      if (OFF_THE_DECK.has(command)) {
+        assert.ok(!placed.has(command), `${COMMAND_LABELS[command]} is meant to be off the deck`);
+        continue;
+      }
+      assert.ok(placed.has(command), `${COMMAND_LABELS[command]} is missing from the layout`);
+    }
   });
 });
