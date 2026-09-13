@@ -113,9 +113,19 @@ export class GameClient {
   #handle(raw: string): void {
     try {
       const message = JSON.parse(raw) as LeaderboardMessage;
-      if (message.game) this.#status = message.game;
-      if (message.snapshot) this.#players = message.snapshot.totalPlayers;
+      let changed = false;
+      if (message.game) {
+        this.#status = message.game;
+        changed = true;
+      }
+      if (typeof message.snapshot?.totalPlayers === 'number' && message.snapshot.totalPlayers !== this.#players) {
+        this.#players = message.snapshot.totalPlayers;
+        changed = true;
+      }
       this.#setOnline(true);
+      // The keys are already online by this point, so #setOnline stays quiet — without
+      // this the volume, the run clock and the player count never reach the deck.
+      if (changed) this.#emit();
     } catch {
       // ignore malformed frames
     }

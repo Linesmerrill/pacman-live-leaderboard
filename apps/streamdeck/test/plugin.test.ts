@@ -210,6 +210,32 @@ describe('Stream Deck plugin', { concurrency: false }, () => {
     await waitFor(() => sent.some((m) => m.event === 'showOk'), 4000);
   });
 
+  test('keys already on the deck repaint when the leaderboard changes underneath them', async () => {
+    // The keys are painted once when they appear and then only when something tells them
+    // to. Live data arriving over the stream has to count as something: without it the
+    // volume, the run clock and the player count sat frozen at their start-up values.
+    send(keyEvent('willAppear', 'LIVE-VOL', '', uuidFor('volume-up')));
+    send(keyEvent('willAppear', 'LIVE-STATUS', '', 'com.pacmanmaze.controller.status'));
+    await waitFor(() => lastTitle('LIVE-VOL') !== undefined && lastTitle('LIVE-STATUS') !== undefined);
+
+    // Nobody touches the deck: these changes come from the leaderboard itself.
+    await fetch(`${leaderboardUrl}/api/settings`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ soundEnabled: true, soundVolume: 40 }),
+    });
+    await waitFor(() => lastTitle('LIVE-VOL') === 'VOL +\n40%', 4000);
+
+    const before = Number(/(\d+) scores/.exec(lastTitle('LIVE-STATUS') ?? '')?.[1] ?? -1);
+    assert.ok(before >= 0, `the status key should show a player count, got "${lastTitle('LIVE-STATUS')}"`);
+    await fetch(`${leaderboardUrl}/api/scores`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ initials: 'NEW', score: 3 }),
+    });
+    await waitFor(() => lastTitle('LIVE-STATUS') === `IDLE\n${before + 1} scores`, 4000);
+  });
+
   test('a key with no address does not disconnect the keys that have one', async () => {
     // Fifteen keys appear at start-up and only one of them carries the address;
     // the others must not reset the plugin back to its default server.
