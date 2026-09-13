@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "elgato": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["--yes", "@elgato/mcp-server@latest"],
+      "env": {}
+    }
+  }
+}

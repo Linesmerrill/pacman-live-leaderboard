@@ -68,6 +68,22 @@ address is shared by every Pac-Man Maze key on the deck:
   a different Mac, or on a different port.
 - **Staff PIN** — only needed if `adminPin` is set in the repo's `config.json`.
 
+## Driving the deck from an AI assistant (optional)
+
+Elgato ships an MCP server that bridges to the running Stream Deck app. [`.mcp.json`](../../.mcp.json)
+in the repo root registers it for Claude Code; Claude Desktop keeps the same block in its own
+`claude_desktop_config.json`. It needs **MCP Actions enabled in the Stream Deck app**, and the app
+running.
+
+What it can do: list the actions installed plugins offer, list what's currently on the deck, and
+*press* a key. That makes it useful for checking a real deck end to end without standing at it.
+
+What it can't do: create or arrange profiles. Laying out the keys is still
+`npm run streamdeck:profile` plus the import, or dragging them on by hand.
+
+It fetches the server from npm on each start, so it needs the internet — which the attraction itself
+never does. Nothing here runs during the event.
+
 ## How it fits together
 
 ```
