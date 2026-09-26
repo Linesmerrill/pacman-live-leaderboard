@@ -8,7 +8,7 @@ import { pageCount, pageForPosition, pageRange, splitColumns } from './paging.js
 import { pixelText, pixelWidth } from './pixelfont.js';
 import { mountRules, setRules } from './rules.js';
 import { isSoundEnabled, loadAudioFiles, play, primeAudio, setIdleMusic, setLoop, setSoundEnabled, setVolume, skipTrack, soundForEntry } from './sounds.js';
-import { FRUIT_BY_RANK, GHOST_COLORS, ghost, pacman, scaredGhost, speaker } from './sprites.js';
+import { FRUIT_BY_RANK, GHOST_COLORS, candy, ghost, pacman, scaredGhost, speaker } from './sprites.js';
 
 const FLASH_MS = 4_400; // matches the .fresh CSS animation (0.55s × 8)
 const NEW_TAG_MS = 20_000;
@@ -31,6 +31,11 @@ const PAD_EM = 2;
 
 const $ = (id) => document.getElementById(id);
 const els = {
+  emptyWinners: h('div', { class: 'empty-winners' }),
+  roundOverlay: $('round-overlay'),
+  roundBanner: $('round-banner'),
+  roundWinners: $('round-winners'),
+  roundHint: $('round-hint'),
   stage: $('stage'),
   boardPane: $('board-pane'),
   rulesPane: $('rules-pane'),
@@ -94,12 +99,13 @@ function div(className, ...children) {
 function setupStaticArt() {
   $('title').append(pixelText('PAC-MAN MAZE'));
   $('subtitle').append(pixelText('LIVE LEADERBOARD'));
+  $('round-candy').innerHTML = candy() + candy() + candy();
   $('ghosts-left').innerHTML = ghost(GHOST_COLORS.red) + ghost(GHOST_COLORS.pink);
   $('ghosts-right').innerHTML = ghost(GHOST_COLORS.cyan) + ghost(GHOST_COLORS.orange);
   $('wipe-pac').innerHTML = pacman();
   els.addBtn.innerHTML = pacman();
   els.addBtn.append(pixelText('ADD PLAYER'));
-  els.empty.append(pixelText('READY!', 'ready'), pixelText('BE THE FIRST TO RUN THE MAZE!', 'ready-hint'));
+  els.empty.append(pixelText('READY!', 'ready'), pixelText('BE THE FIRST TO RUN THE MAZE!', 'ready-hint'), els.emptyWinners);
   els.conn.append(pixelText('RECONNECTING...'));
   $('entry-title').append(pixelText('NEW PLAYER'));
 }
@@ -161,6 +167,8 @@ function buildColumn(entries, { rows, withIcon, withTime, rankChars, rowTemplate
 function buildRow(entry, { withIcon, withTime, now }) {
   const row = document.createElement('li');
   const classes = ['row', `pos-${entry.position}`];
+  const round = state.snapshot?.round;
+  if (round?.enabled && entry.rank <= round.prizeCount) classes.push('prize'); // in the candy places right now
   if (entry.rank <= 3) classes.push(`rank-${entry.rank}`);
   if (state.spot?.id === entry.id) classes.push('spot');
   const addedAt = state.fresh.get(entry.id);
@@ -225,7 +233,8 @@ function render() {
   }
   state.page = pages ? Math.min(state.page, pages - 1) : 0;
 
-  const key = JSON.stringify([entries, withTime, rows, columns, state.page, state.spot?.id, [...state.fresh.keys()], state.enterAnimation]);
+  const prize = snapshot.round?.enabled ? snapshot.round.prizeCount : 0;
+  const key = JSON.stringify([entries, withTime, rows, columns, state.page, state.spot?.id, [...state.fresh.keys()], state.enterAnimation, prize]);
   if (key === state.renderKey) return;
   state.renderKey = key;
 
@@ -341,6 +350,7 @@ function spotlight(entryId, delayMs = 0) {
 
 function tick() {
   const now = Date.now();
+  renderRound();
   let dirty = false;
   if (state.game && state.game.state !== 'idle') {
     renderGameStatus();
@@ -417,9 +427,11 @@ function handleUpdate(message) {
   applySoundSetting(snapshot.display.soundEnabled);
   setVolume(snapshot.display.soundVolume);
   setIdleMusic({ enabled: snapshot.display.idleMusicEnabled, volume: snapshot.display.idleMusicVolume });
-  applyRules({ ...snapshot.display, scoring: snapshot.scoring });
+  applyRules({ ...snapshot.display, scoring: snapshot.scoring, round: snapshot.round });
   if (state.game) setLoop(state.game.loop); // picks the bed back up if it was just switched on
   applyGame(message.game);
+  renderRound();
+  if (message.roundEnded) showRoundWinners(message.roundEnded);
   if (reason === 'game') {
     render();
     return;
@@ -507,6 +519,65 @@ function runClock() {
 }
 
 /** The line under the title: normally "LIVE LEADERBOARD", otherwise what the run is doing. */
+// ---------- Prize rounds ----------
+
+const ROUND_OVERLAY_MS = 25_000;
+const clockText = (ms) => {
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+};
+
+/** The subtitle becomes the round's clock, and the empty board remembers last round's winners. */
+function renderRound() {
+  const round = state.snapshot?.round;
+  let text = 'LIVE LEADERBOARD';
+  if (round?.enabled) {
+    text = round.endsAt
+      ? `ROUND ${round.number} - ${clockText(round.endsAt - Date.now())} - TOP ${round.prizeCount} WIN`
+      : `ROUND ${round.number} - TOP ${round.prizeCount} WIN CANDY`;
+  }
+  if (text !== state.roundText) {
+    state.roundText = text;
+    els.subtitle.replaceChildren(pixelText(text));
+    els.subtitle.setAttribute('aria-label', text);
+  }
+
+  const last = round?.enabled ? round.lastRound : null;
+  const key = last ? `${last.number}:${last.winners.map((w) => w.initials).join()}` : '';
+  if (key !== state.emptyWinnersKey) {
+    state.emptyWinnersKey = key;
+    els.emptyWinners.replaceChildren(
+      ...(last
+        ? [pixelText(`ROUND ${last.number} WINNERS`, 'winners-title'), ...last.winners.map((w) => pixelText(`${ordinal(w.rank)} ${w.initials} ${w.score}`, 'winner-line'))]
+        : []),
+    );
+  }
+}
+
+/** Full-screen moment when a round ends: who won, and where to collect. */
+els.roundOverlay.addEventListener('click', () => {
+  els.roundOverlay.hidden = true;
+});
+
+function showRoundWinners(result) {
+  if (!result.winners.length) return;
+  clearTimeout(state.roundOverlayTimer);
+  els.roundBanner.replaceChildren(pixelText(`ROUND ${result.number} WINNERS!`));
+  els.roundWinners.replaceChildren(
+    ...result.winners.map((w) => {
+      const li = h('li', { class: `rank-${Math.min(w.rank, 4)}` });
+      li.append(pixelText(ordinal(w.rank), 'w-rank'), pixelText(w.initials, 'w-name'), pixelText(String(w.score), 'w-score'));
+      return li;
+    }),
+  );
+  els.roundHint.replaceChildren(pixelText('SEE STAFF FOR YOUR CANDY!'));
+  els.roundOverlay.hidden = false;
+  play('highScore');
+  state.roundOverlayTimer = setTimeout(() => {
+    els.roundOverlay.hidden = true;
+  }, ROUND_OVERLAY_MS);
+}
+
 function renderGameStatus() {
   const game = state.game;
   const idle = !game || game.state === 'idle';
@@ -738,6 +809,8 @@ function applyRules(display) {
     powerPelletSeconds: display.powerPelletSeconds ?? 5,
     maxPellets: display.maxPellets ?? 1,
     scoring: display.scoring,
+    // Only what the rule text needs, so the ticking clock doesn't restart the rules.
+    round: display.round ? { enabled: display.round.enabled, minutes: display.round.minutes, prizeCount: display.round.prizeCount } : null,
   });
 }
 

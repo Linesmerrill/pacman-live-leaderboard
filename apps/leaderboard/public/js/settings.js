@@ -1,3 +1,4 @@
+import { createRoundPanel } from './round-panel.js';
 import { DEFAULT_SCORING, FRUITS } from './scoring.js';
 import { FRUIT_ART } from './sprites.js';
 import { api } from './api.js';
@@ -23,6 +24,11 @@ const els = {
   maxPellets: $('max-pellets'),
   runSave: $('run-save'),
   runMsg: $('run-msg'),
+  roundsToggle: $('rounds-toggle'),
+  roundsToggleLabel: $('rounds-toggle-label'),
+  roundMinutes: $('round-minutes'),
+  prizeCount: $('prize-count'),
+  roundsSave: $('rounds-save'),
   scoringFruit: $('scoring-fruit'),
   scoringGhosts: $('scoring-ghosts'),
   scoringSave: $('scoring-save'),
@@ -165,6 +171,11 @@ function renderSettings() {
   if (document.activeElement !== els.idleVolume) els.idleVolume.value = String(idleMusicVolume);
   els.idleVolumeLabel.textContent = `${idleMusicVolume}%`;
   if (!state.scoringDirty) renderScoring(state.settings.scoring);
+  const { roundsEnabled, roundMinutes, prizeCount } = state.settings;
+  els.roundsToggle.checked = roundsEnabled;
+  els.roundsToggleLabel.textContent = roundsEnabled ? 'On — top players win, then the board starts fresh' : 'Off — one leaderboard all night';
+  if (document.activeElement !== els.roundMinutes) els.roundMinutes.value = String(roundMinutes);
+  if (document.activeElement !== els.prizeCount) els.prizeCount.value = String(prizeCount);
   const { rulesEnabled, rulesPercent, rulesStepSeconds } = state.settings;
   els.rulesToggle.checked = rulesEnabled;
   els.rulesToggleLabel.textContent = rulesEnabled ? 'On — rules beside the leaderboard' : 'Off — leaderboard fills the screen';
@@ -228,6 +239,16 @@ els.idleVolume.addEventListener('input', () => {
   els.idleVolumeLabel.textContent = `${els.idleVolume.value}%`;
 });
 els.idleVolume.addEventListener('change', () => void saveIdleMusic({ idleMusicVolume: Number(els.idleVolume.value) }));
+
+// ---------- Prize rounds ----------
+
+const roundPanel = createRoundPanel({ controls: true });
+document.getElementById('round-panel-root').append(roundPanel.el);
+els.roundsToggle.addEventListener('change', () => void saveIdleMusic({ roundsEnabled: els.roundsToggle.checked }));
+els.roundsSave.addEventListener('click', async () => {
+  if (!(await saveIdleMusic({ roundMinutes: Number(els.roundMinutes.value), prizeCount: Number(els.prizeCount.value) }))) return;
+  toast('Saved. A round that’s already running keeps its end time — use “Restart the clock” to apply a new length now.', { tone: 'ok' });
+});
 
 // ---------- Scoring ----------
 
@@ -310,14 +331,18 @@ for (const [input, key, label, unit] of [
   });
 }
 
+/** Saves a settings change; true when it went through (errors are shown as a toast). */
 async function saveIdleMusic(patch) {
+  let ok = false;
   try {
     const { settings } = await api('PUT', '/api/settings', patch);
     state.settings = settings;
+    ok = true;
   } catch (err) {
     toast(err.message, { tone: 'error' });
   }
   renderSettings();
+  return ok;
 }
 
 els.deny.addEventListener('input', () => {
@@ -395,6 +420,7 @@ els.resetBtn.addEventListener('click', async () => {
 connectLive({
   onUpdate: ({ reason, snapshot }) => {
     state.maxScore = snapshot.maxScore;
+    roundPanel.update(snapshot);
     if (reason !== 'poll' && reason !== 'spotlight') void load();
   },
   onStatus: (status) => {

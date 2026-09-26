@@ -52,6 +52,12 @@ export interface AppConfig {
   rulesPercent: number;
   /** Seconds each rule stays up before the next one. */
   rulesStepSeconds: number;
+  /** Prize rounds: every few minutes the top players win a prize and the board starts fresh. */
+  roundsEnabled: boolean;
+  /** Length of a prize round, in minutes (the clock starts with the round's first score). */
+  roundMinutes: number;
+  /** How many places win: everyone ranked this or better when the round ends. */
+  prizeCount: number;
   /** Optional PIN required by staff screens. Empty string = no PIN. */
   adminPin: string;
   /** Highest score staff can enter. */
@@ -85,6 +91,9 @@ export const DEFAULT_CONFIG: Readonly<AppConfig> = Object.freeze({
   rulesEnabled: true,
   rulesPercent: 40,
   rulesStepSeconds: 6,
+  roundsEnabled: true,
+  roundMinutes: 15,
+  prizeCount: 3,
   adminPin: '',
   maxScore: 999,
   maxTimeSeconds: 3600,
@@ -143,7 +152,7 @@ export function loadConfig(options: { file?: string; env?: NodeJS.ProcessEnv; ro
     (config as unknown as Record<string, unknown>)[k] = value;
   }
 
-  for (const k of ['port', 'leaderboardSize', 'boardColumns', 'pageSeconds', 'spotlightSeconds', 'maxScore', 'maxTimeSeconds', 'duplicateWarningSeconds', 'soundVolume', 'countdownSeconds', 'runSeconds', 'powerPelletSeconds', 'maxPellets', 'idleMusicVolume', 'wakaIntervalMs', 'rulesPercent', 'rulesStepSeconds'] as const) {
+  for (const k of ['port', 'leaderboardSize', 'boardColumns', 'pageSeconds', 'spotlightSeconds', 'maxScore', 'maxTimeSeconds', 'duplicateWarningSeconds', 'soundVolume', 'countdownSeconds', 'runSeconds', 'powerPelletSeconds', 'maxPellets', 'idleMusicVolume', 'wakaIntervalMs', 'rulesPercent', 'rulesStepSeconds', 'roundMinutes', 'prizeCount'] as const) {
     if (!Number.isInteger(config[k]) || config[k] < 0) throw new Error(`config: "${k}" must be a whole number ≥ 0`);
   }
   if (config.leaderboardSize < 3 || config.leaderboardSize > 20) throw new Error('config: "leaderboardSize" must be 3–20');
@@ -156,6 +165,8 @@ export function loadConfig(options: { file?: string; env?: NodeJS.ProcessEnv; ro
   if (config.idleMusicVolume > 100) throw new Error('config: "idleMusicVolume" must be 0–100');
   if (config.rulesPercent < 25 || config.rulesPercent > 65) throw new Error('config: "rulesPercent" must be 25–65');
   if (config.rulesStepSeconds < 3 || config.rulesStepSeconds > 30) throw new Error('config: "rulesStepSeconds" must be 3–30');
+  if (config.roundMinutes < 1 || config.roundMinutes > 240) throw new Error('config: "roundMinutes" must be 1–240');
+  if (config.prizeCount < 1 || config.prizeCount > 20) throw new Error('config: "prizeCount" must be 1–20');
   if (config.wakaIntervalMs < 60 || config.wakaIntervalMs > 2000) throw new Error('config: "wakaIntervalMs" must be 60–2000');
 
   if (config.databaseFile !== ':memory:') config.databaseFile = path.resolve(root, config.databaseFile);

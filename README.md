@@ -202,6 +202,27 @@ Restart the app after adding files (the folder is read at startup) and check wha
 right to use. The folder is git-ignored, so your sounds stay on the event Mac and this public
 repository never redistributes them.
 
+### Prize rounds: candy for the top players
+
+The board runs in short rounds rather than all night, so kids who are still around can actually
+win. With the defaults, **every 15 minutes the top 3 win candy** and the board starts fresh:
+
+- A round's clock starts with its **first score**, so setup time and quiet spells never use one up.
+  The TV's subtitle becomes the clock: `ROUND 2 - 12:34 - TOP 3 WIN`.
+- When it runs out, the app ends the round on its own: everyone ranked in the prize places wins
+  (**ties included** — two kids tied for 3rd both win), the TV shows **ROUND 2 WINNERS!** with the
+  fanfare and "see staff for your candy", the board is **backed up and cleared**, and the next round
+  starts with the next score. Nobody has to press anything, and a kid who scores while candy is being
+  handed out simply lands in the new round.
+- The winners stay on the empty TV board, and on the staff entry screen with a tick box each, so you
+  can check kids off as they collect.
+- **Manage scores → Prize rounds** has the switch, the round length and how many places win, plus
+  **End round now** and **Restart the clock** (handy for lining rounds up with the hour). A restart of
+  the Mac doesn't lose a round: it picks up where it was, or ends at once if it ran out meanwhile.
+
+The TV's rules gain a **WIN CANDY!** step while rounds are on. Only initials and scores are kept for
+winners, the same as the board itself.
+
 ### Scoring: fruit and ghosts
 
 Each fruit bean bag is worth points, and so is each ghost tagged in power mode. Staff never add it
@@ -403,6 +424,7 @@ Edit `config.json` and restart the app. Every key is optional.
 | `maxPellets` | `1` | Starting cap on how many pellets add time to one run |
 | `idleMusicEnabled` · `idleMusicVolume` | `true` · `35` | Starting state of the background music between runs |
 | `rulesEnabled` · `rulesPercent` · `rulesStepSeconds` | `true` · `40` · `6` | The how-to-play rules beside the leaderboard: on/off, share of the screen width (25–65), seconds per rule |
+| `roundsEnabled` · `roundMinutes` · `prizeCount` | `true` · `15` · `3` | Prize rounds: on/off, minutes per round, how many places win |
 | `adminPin` | `""` | Staff PIN; empty = no PIN (env `ADMIN_PIN`) |
 | `maxScore` | `999` | Highest score accepted |
 | `maxTimeSeconds` | `3600` | Longest completion time accepted |

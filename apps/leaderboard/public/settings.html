@@ -96,6 +96,24 @@
         </div>
       </section>
 
+      <section class="card" aria-labelledby="rounds-title">
+        <h2 id="rounds-title">Prize rounds</h2>
+        <p class="muted">Every few minutes, whoever is in the top places wins candy, and the board starts fresh (it's backed up first). A round's clock starts with its first score, so quiet spells don't use one up. Kids ranked equal all win.</p>
+        <label class="switch">
+          <input type="checkbox" id="rounds-toggle" role="switch">
+          <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+          <span class="switch-label" id="rounds-toggle-label">On</span>
+        </label>
+        <div class="inline-fields" style="margin-top: 16px">
+          <label class="field-label stacked">Round length <span class="hint">minutes</span>
+            <input class="text-input" id="round-minutes" type="number" min="1" max="240" step="1" inputmode="numeric"></label>
+          <label class="field-label stacked">Prize places <span class="hint">top how many win</span>
+            <input class="text-input" id="prize-count" type="number" min="1" max="20" step="1" inputmode="numeric"></label>
+          <button class="btn btn-primary" id="rounds-save" type="button">Save</button>
+        </div>
+        <div id="round-panel-root" style="margin-top: 16px"></div>
+      </section>
+
       <section class="card" aria-labelledby="rules-title">
         <h2 id="rules-title">How to play (on the TV)</h2>
         <p class="muted">The rules run beside the leaderboard for the kids waiting in line, one at a time with a little animation of each. High scores, the countdown and FINISH still take over the whole screen.</p>

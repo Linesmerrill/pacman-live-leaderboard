@@ -1172,3 +1172,97 @@ body[data-game-state='power-mode'] .rules-frame::before {
   width: calc(var(--u) * 11);
   height: calc(var(--u) * 11);
 }
+
+/* ---------- Prize rounds ---------- */
+
+/* Rows currently in the candy places (only shows beyond the podium, e.g. with top 5). */
+.row.prize:not(.pos-1):not(.pos-2):not(.pos-3) {
+  box-shadow: inset calc(var(--u) * 0.45) 0 0 #ff2d8a;
+}
+
+.round-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 14;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 3.5);
+  background: rgba(0, 0, 0, 0.9);
+  animation: overlay-in 0.5s ease-out both;
+}
+.round-candy {
+  display: flex;
+  gap: calc(var(--u) * 4);
+}
+.round-candy .candy {
+  width: calc(var(--u) * 12);
+  height: calc(var(--u) * 12);
+  animation: bob 1.1s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 calc(var(--u) * 1.5) rgba(255, 45, 138, 0.6));
+}
+.round-candy .candy:nth-child(2) { animation-delay: -0.37s; }
+.round-candy .candy:nth-child(3) { animation-delay: -0.74s; }
+.round-banner {
+  font-size: calc(var(--u) * 1.5);
+  color: var(--yellow);
+  filter: drop-shadow(0.22em 0.22em 0 #e0261f) drop-shadow(0 0 0.8em rgba(255, 225, 53, 0.5));
+  animation: blink 0.8s steps(1, end) 4;
+}
+.round-winners {
+  list-style: none;
+  display: grid;
+  gap: calc(var(--u) * 2);
+}
+.round-winners li {
+  display: grid;
+  /* Pixel-font text is sized in font pixels (1em each), so columns are too: 4 characters = 23em. */
+  grid-template-columns: 23em 17em 17em;
+  align-items: center;
+  gap: 8em;
+  font-size: calc(var(--u) * 1.3);
+  color: var(--white);
+}
+.round-winners .w-score { justify-self: end; color: var(--cyan); }
+.round-winners .rank-1 .w-rank { color: var(--yellow); }
+.round-winners .rank-2 .w-rank { color: #d9e1ff; }
+.round-winners .rank-3 .w-rank { color: var(--orange, #ffa23a); }
+.round-winners .rank-4 .w-rank { color: var(--rank-blue); }
+.round-hint {
+  font-size: calc(var(--u) * 0.9);
+  color: #ff9ce6;
+  animation: blink 1s steps(1, end) infinite;
+}
+
+/* Empty board between rounds: last round's winners under READY! */
+.empty-winners {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--u) * 1.4);
+  margin-top: calc(var(--u) * 4);
+}
+.empty-winners:empty {
+  display: none;
+}
+.empty-winners .winners-title {
+  font-size: calc(var(--u) * 0.6);
+  color: #ff9ce6;
+}
+.empty-winners .winner-line {
+  font-size: calc(var(--u) * 0.75);
+  color: var(--white);
+}
+.rules-scene .prize-candy {
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  display: flex;
+  gap: calc(var(--u) * 2);
+}
+.rules-scene .prize-candy .candy {
+  width: calc(var(--u) * 20);
+  height: calc(var(--u) * 20);
+  filter: drop-shadow(0 0 calc(var(--u) * 1.2) rgba(255, 45, 138, 0.6));
+}

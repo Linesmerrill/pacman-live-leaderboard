@@ -112,6 +112,16 @@ export function key(className = '') {
   </svg>`;
 }
 
+/** A wrapped sweet: the prize for the top players at the end of a round. */
+export function candy(className = '') {
+  return `<svg class="candy ${className}" viewBox="0 0 100 100" aria-hidden="true">
+    <path d="M28 50L6 30v40zM72 50l22-20v40z" fill="#ff9ce6"/>
+    <ellipse cx="50" cy="50" rx="26" ry="20" fill="#ff2d8a"/>
+    <path d="M34 36l10 28M48 31l10 38M62 35l6 22" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/>
+    <ellipse cx="42" cy="42" rx="7" ry="4" fill="#fff" opacity=".5"/>
+  </svg>`;
+}
+
 /** Artwork for every fruit a bean bag can be, by id (see scoring.js). */
 export const FRUIT_ART = { cherry, strawberry, orange, apple, melon, galaxian, bell, key };
 

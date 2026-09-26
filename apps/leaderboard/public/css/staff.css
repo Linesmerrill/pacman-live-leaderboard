@@ -548,3 +548,75 @@ body.hide-time .time-col {
   flex-wrap: wrap;
   gap: 10px;
 }
+
+/* ---------- Prize rounds ---------- */
+
+.inline-fields {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.inline-fields .text-input {
+  width: 120px;
+}
+.round-panel {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.round-status {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  font-weight: 700;
+}
+.round-status[data-state='running'] {
+  border-color: #ff2d8a;
+  color: #ffd1ea;
+}
+.round-status[data-state='off'] {
+  color: var(--muted);
+}
+.round-winners-staff h3 {
+  margin: 4px 0 8px;
+  font-size: 17px;
+}
+.winner-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.winner-list label {
+  display: grid;
+  grid-template-columns: 26px 52px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.winner-list input {
+  width: 22px;
+  height: 22px;
+  accent-color: #ff2d8a;
+}
+.winner-list .w-name {
+  color: var(--yellow);
+  font: 800 22px/1 var(--mono);
+  letter-spacing: 0.1em;
+}
+.winner-list .w-score {
+  color: var(--muted);
+  font-weight: 700;
+}
+.winner-list li.given {
+  opacity: 0.45;
+}
+.winner-list li.given .w-name {
+  text-decoration: line-through;
+}

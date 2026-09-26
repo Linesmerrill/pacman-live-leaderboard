@@ -7,10 +7,14 @@
 
 import { canDraw, pixelText, pixelWidth } from './pixelfont.js';
 import { DEFAULT_SCORING, FRUITS } from './scoring.js';
-import { FRUIT_ART, GHOST_COLORS, ghost, pacman, scaredGhost } from './sprites.js';
+import { FRUIT_ART, GHOST_COLORS, candy, ghost, pacman, scaredGhost } from './sprites.js';
 
 /** The rules, in order. Pure: the tests check every line can be drawn by the pixel font. */
-export function ruleSteps({ runSeconds = 20, powerPelletSeconds = 5, maxPellets = 1 } = {}) {
+/**
+ * @param {{ runSeconds?: number, powerPelletSeconds?: number, maxPellets?: number,
+ *   round?: { enabled: boolean, minutes: number, prizeCount: number } | null }} [options]
+ */
+export function ruleSteps({ runSeconds = 20, powerPelletSeconds = 5, maxPellets = 1, round = null } = {}) {
   const clock =
     runSeconds > 0
       ? {
@@ -29,6 +33,10 @@ export function ruleSteps({ runSeconds = 20, powerPelletSeconds = 5, maxPellets 
     { scene: 'duo', title: '2 KIDS PER GAME', lines: ['START ON', 'OPPOSITE SIDES!'] },
     clock,
     { scene: 'board', title: 'GAME OVER!', lines: ['TELL STAFF YOUR', 'INITIALS TO GET', 'ON THE BOARD!'] },
+    // Prize rounds, only while they're switched on.
+    ...(round?.enabled
+      ? [{ scene: 'prize', title: 'WIN CANDY!', lines: [`BE TOP ${round.prizeCount} WHEN`, `THE ${round.minutes} MINUTE`, 'ROUND ENDS!'] }]
+      : []),
   ];
 }
 
@@ -229,6 +237,32 @@ const SCENES = {
       row.classList.toggle('lit', t > 0.66);
     }, 60);
     return [loop(fruit, [{ transform: 'translate(-50%, -50%) rotate(-8deg)' }, { transform: 'translate(-50%, -60%) rotate(8deg)', offset: 0.5 }, { transform: 'translate(-50%, -50%) rotate(-8deg)' }]), { cancel: () => clearInterval(timer) }];
+  },
+
+  // The round clock runs down, then the candy bounces out for the top players.
+  prize(scene, { round }) {
+    const minutes = round?.minutes ?? 15;
+    const number = document.createElement('div');
+    number.className = 'clock-number';
+    const sweets = document.createElement('div');
+    sweets.className = 'prize-candy';
+    sweets.innerHTML = candy() + candy() + candy();
+    scene.append(number, sweets);
+    const started = performance.now();
+    let last = '';
+    const timer = setInterval(() => {
+      const t = ((performance.now() - started) % LOOP_MS) / LOOP_MS;
+      const left = Math.max(0, Math.round(minutes * 60 * (1 - t / 0.55)));
+      const text = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+      if (text !== last) {
+        last = text;
+        number.replaceChildren(pixelText(text));
+      }
+    }, 60);
+    return [
+      loop(sweets, [{ opacity: 0, transform: 'translate(-50%, 30%) scale(0.6)' }, { opacity: 0, offset: 0.55 }, { opacity: 1, transform: 'translate(-50%, -10%) scale(1.1)', offset: 0.68 }, { opacity: 1, transform: 'translate(-50%, 0) scale(1)', offset: 0.78 }, { opacity: 1, transform: 'translate(-50%, 0) scale(1)' }]),
+      { cancel: () => clearInterval(timer) },
+    ];
   },
 };
 

@@ -26,6 +26,9 @@ export interface Settings {
   rulesEnabled: boolean;
   rulesPercent: number;
   rulesStepSeconds: number;
+  roundsEnabled: boolean;
+  roundMinutes: number;
+  prizeCount: number;
   /** Points per fruit (and which fruit are in the maze), and per ghost tagged. */
   scoring: Scoring;
   customDenyList: string[];
@@ -34,6 +37,31 @@ export interface Settings {
 export interface Scoring {
   fruits: Record<string, { points: number; enabled: boolean }>;
   ghosts: number[];
+}
+
+/** One winner of a prize round. Same fields the board already shows: initials, score, place. */
+export interface RoundWinner {
+  initials: string;
+  score: number;
+  rank: number;
+}
+
+export interface RoundResult {
+  number: number;
+  endedAt: number;
+  winners: RoundWinner[];
+}
+
+/** The prize round, for every screen: what's running, when it ends, and who won last time. */
+export interface RoundStatus {
+  enabled: boolean;
+  minutes: number;
+  prizeCount: number;
+  /** The round being played (1 for the first of the night). */
+  number: number;
+  /** Epoch ms the round ends; null until its first score arrives. */
+  endsAt: number | null;
+  lastRound: RoundResult | null;
 }
 
 export interface DisplaySettings {
@@ -63,6 +91,7 @@ export interface LeaderboardSnapshot {
   maxScore: number;
   /** For the staff score calculator and the rules on the TV. */
   scoring: Scoring;
+  round: RoundStatus;
   display: DisplaySettings;
 }
 
@@ -102,6 +131,8 @@ const NUMERIC_SETTINGS = {
   idleMusicVolume: { min: 0, max: 100 },
   rulesPercent: { min: 25, max: 65 },
   rulesStepSeconds: { min: 3, max: 30 },
+  roundMinutes: { min: 1, max: 240 },
+  prizeCount: { min: 1, max: 20 },
 } as const;
 const SETTING_DENY = 'customDenyList';
 const SUBMISSION_MEMORY_MS = 15 * 60 * 1000;
@@ -164,6 +195,7 @@ export class LeaderboardService {
     }
     const idleMusic = this.#store.getSetting('idleMusicEnabled');
     const rules = this.#store.getSetting('rulesEnabled');
+    const rounds = this.#store.getSetting('roundsEnabled');
     let scoring: Scoring;
     try {
       scoring = normalizeScoring(JSON.parse(this.#store.getSetting('scoring') ?? '{}')) as Scoring;
@@ -185,6 +217,7 @@ export class LeaderboardService {
       soundVolume: Number.isFinite(volume) && volume >= 0 && volume <= 100 ? volume : this.#config.soundVolume,
       idleMusicEnabled: idleMusic === null ? this.#config.idleMusicEnabled : idleMusic === 'true',
       rulesEnabled: rules === null ? this.#config.rulesEnabled : rules === 'true',
+      roundsEnabled: rounds === null ? this.#config.roundsEnabled : rounds === 'true',
       ...numbers,
       scoring,
       customDenyList,
@@ -201,7 +234,7 @@ export class LeaderboardService {
 
   updateSettings(patch: Record<string, unknown>): { rejectedDenyEntries: string[] } {
     let rejectedDenyEntries: string[] = [];
-    for (const [field, key] of [['completionTimeEnabled', SETTING_TIME], ['soundEnabled', SETTING_SOUND], ['idleMusicEnabled', 'idleMusicEnabled'], ['rulesEnabled', 'rulesEnabled']] as const) {
+    for (const [field, key] of [['completionTimeEnabled', SETTING_TIME], ['soundEnabled', SETTING_SOUND], ['idleMusicEnabled', 'idleMusicEnabled'], ['rulesEnabled', 'rulesEnabled'], ['roundsEnabled', 'roundsEnabled']] as const) {
       const value = patch[field];
       if (value === undefined) continue;
       if (typeof value !== 'boolean') throw new TypeError(`${field} must be true or false`);
@@ -221,6 +254,7 @@ export class LeaderboardService {
       if (!Number.isFinite(volume) || volume < 0 || volume > 100) throw new TypeError('soundVolume must be a number from 0 to 100');
       this.#store.setSetting(SETTING_VOLUME, String(Math.round(volume)));
     }
+    if (patch.roundsEnabled !== undefined && patch.roundsEnabled !== this.#settings.roundsEnabled) this.#cancelRoundClock();
     if (patch.scoring !== undefined) {
       this.#store.setSetting('scoring', JSON.stringify(normalizeScoring(patch.scoring as object)));
     }
@@ -263,6 +297,7 @@ export class LeaderboardService {
       completionTimeEnabled: this.#settings.completionTimeEnabled,
       maxScore: this.#config.maxScore,
       scoring: this.#settings.scoring,
+      round: this.roundStatus(),
       display: { soundEnabled: this.#settings.soundEnabled, soundVolume: this.#settings.soundVolume,
         idleMusicEnabled: this.#settings.idleMusicEnabled, idleMusicVolume: this.#settings.idleMusicVolume,
         rulesEnabled: this.#settings.rulesEnabled, rulesPercent: this.#settings.rulesPercent, rulesStepSeconds: this.#settings.rulesStepSeconds,
@@ -312,6 +347,9 @@ export class LeaderboardService {
     }
 
     const record = this.#store.insert({ initials, score, timeSeconds, createdAt: now });
+    // A prize round's clock starts with its first score, so setup time and quiet spells never
+    // use up a round.
+    this.#startRoundIfIdle(now);
     const ranked = this.#rankAll();
     const entry = ranked.find((e) => e.id === record.id);
     if (!entry) throw new Error('Inserted score was not found');
@@ -341,10 +379,72 @@ export class LeaderboardService {
   }
 
   /** Clears every score. A backup is written first so a mistaken reset can be recovered. */
+  // ---------- Prize rounds ----------
+
+  #roundState(): { number: number; endsAt: number | null; lastRound: RoundResult | null } {
+    try {
+      const saved = JSON.parse(this.#store.getSetting('round') ?? 'null');
+      if (saved && Number.isInteger(saved.number) && saved.number >= 1) {
+        return { number: saved.number, endsAt: typeof saved.endsAt === 'number' ? saved.endsAt : null, lastRound: saved.lastRound ?? null };
+      }
+    } catch {
+      // a damaged saved round just starts over at round 1
+    }
+    return { number: 1, endsAt: null, lastRound: null };
+  }
+
+  #saveRound(state: { number: number; endsAt: number | null; lastRound: RoundResult | null }): void {
+    this.#store.setSetting('round', JSON.stringify(state));
+  }
+
+  roundStatus(): RoundStatus {
+    const { roundsEnabled, roundMinutes, prizeCount } = this.#settings;
+    const state = this.#roundState();
+    return { enabled: roundsEnabled, minutes: roundMinutes, prizeCount, number: state.number, endsAt: roundsEnabled ? state.endsAt : null, lastRound: state.lastRound };
+  }
+
+  #startRoundIfIdle(now: number): void {
+    const state = this.#roundState();
+    if (!this.#settings.roundsEnabled || state.endsAt !== null) return;
+    this.#saveRound({ ...state, endsAt: now + this.#settings.roundMinutes * 60_000 });
+  }
+
+  /** Start the round's clock over from now (e.g. to line it up with the hour). Starts one if none is running. */
+  restartRoundClock(now = Date.now()): RoundStatus {
+    if (!this.#settings.roundsEnabled) throw new TypeError('Prize rounds are switched off.');
+    const state = this.#roundState();
+    this.#saveRound({ ...state, endsAt: now + this.#settings.roundMinutes * 60_000 });
+    return this.roundStatus();
+  }
+
+  /**
+   * End the round: everyone ranked within the prize places wins (ties included), the winners are
+   * kept for staff and the TV, the board is backed up and cleared, and the next round waits for
+   * its first score.
+   */
+  endRound(now = Date.now()): RoundResult {
+    const state = this.#roundState();
+    const { prizeCount } = this.#settings;
+    const winners = this.#rankAll()
+      .filter((entry) => entry.rank <= prizeCount)
+      .map(({ initials, score, rank }) => ({ initials, score, rank }));
+    const result: RoundResult = { number: state.number, endedAt: now, winners };
+    if (this.#store.count() > 0) this.reset();
+    this.#saveRound({ number: state.number + 1, endsAt: null, lastRound: winners.length ? result : state.lastRound });
+    return result;
+  }
+
+  /** Switching rounds off (or back on) cancels the running clock; the board is left alone. */
+  #cancelRoundClock(): void {
+    const state = this.#roundState();
+    if (state.endsAt !== null) this.#saveRound({ ...state, endsAt: null });
+  }
+
   reset(): { deleted: number; backupFile: string | null } {
     const backupFile = this.#store.count() > 0 ? this.backup('before-reset') : null;
     const deleted = this.#store.deleteAll();
     this.#submissions.clear();
+    this.#cancelRoundClock(); // an empty board has no round running until its next score
     return { deleted, backupFile };
   }
 

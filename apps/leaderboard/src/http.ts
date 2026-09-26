@@ -23,7 +23,7 @@ export interface App {
   close(): Promise<void>;
 }
 
-type UpdateReason = 'added' | 'updated' | 'deleted' | 'reset' | 'settings' | 'spotlight' | 'game';
+type UpdateReason = 'added' | 'updated' | 'deleted' | 'reset' | 'settings' | 'spotlight' | 'game' | 'round';
 
 class HttpError extends Error {
   readonly status: number;
@@ -133,6 +133,25 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
   });
 
   /** Every message carries the whole picture: scores + game state, so a screen can join at any time. */
+  // Ends each prize round on time. The round itself lives in the service (and survives a restart);
+  // this only keeps one timer pointed at whenever the current round is due to end.
+  let roundTimer: NodeJS.Timeout | null = null;
+  function scheduleRound(): void {
+    clearTimeout(roundTimer ?? undefined);
+    roundTimer = null;
+    const { enabled, endsAt } = service.roundStatus();
+    if (!enabled || endsAt === null) return;
+    roundTimer = setTimeout(() => finishRound('time up'), Math.max(0, endsAt - Date.now()));
+    roundTimer.unref?.();
+  }
+  function finishRound(why: string): void {
+    const result = service.endRound();
+    const names = result.winners.map((w) => `${w.initials} ${w.score}`).join(', ');
+    log(`★ round ${result.number} over (${why}): ${names || 'no winners — nobody played'}${result.winners.length ? '; board cleared for the next round' : ''}`);
+    broadcast('round', { roundEnded: result });
+    scheduleRound();
+  }
+
   function broadcast(reason: UpdateReason, extra: Record<string, unknown> = {}): void {
     hub.broadcast({ reason, snapshot: service.snapshot(), game: game.status, ...extra });
   }
@@ -236,6 +255,7 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
         const { entry } = result;
         log(`+ ${entry.initials} ${entry.score} pts${entry.timeSeconds !== null ? ` ${entry.timeSeconds}s` : ''} → rank ${entry.rank}${result.isNewHighScore ? ' (NEW HIGH SCORE)' : ''}`);
         broadcast('added', { added: { entry, isNewHighScore: result.isNewHighScore } });
+        scheduleRound(); // the round's first score starts its clock
       }
       return sendJson(res, result.replayed ? 200 : 201, { entry: result.entry, isNewHighScore: result.isNewHighScore, replayed: result.replayed });
     }
@@ -259,12 +279,30 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
       broadcast('spotlight', { spotlight: { entry } });
       return sendJson(res, 200, { entry });
     }
+    if (method === 'POST' && pathname === '/api/round/end') {
+      if (!service.roundStatus().enabled) throw new HttpError(409, 'rounds_off', 'Prize rounds are switched off.');
+      finishRound('ended by staff');
+      return sendJson(res, 200, { round: service.roundStatus() });
+    }
+    if (method === 'POST' && pathname === '/api/round/restart') {
+      try {
+        const round = service.restartRoundClock();
+        log(`★ round ${round.number} clock restarted: ends ${new Date(round.endsAt!).toLocaleTimeString()}`);
+        broadcast('round');
+        scheduleRound();
+        return sendJson(res, 200, { round });
+      } catch (err) {
+        if (err instanceof TypeError) throw new HttpError(409, 'rounds_off', err.message);
+        throw err;
+      }
+    }
     if (method === 'POST' && pathname === '/api/reset') {
       const body = await readJsonBody(req);
       if (body.confirm !== 'RESET') throw new HttpError(400, 'confirm_required', 'Type RESET to confirm clearing the leaderboard.');
       const result = service.reset();
       log(`! leaderboard reset (${result.deleted} scores cleared; backup: ${result.backupFile ?? 'none needed'})`);
       broadcast('reset');
+      scheduleRound();
       return sendJson(res, 200, result);
     }
     if (method === 'POST' && pathname === '/api/backup') {
@@ -297,6 +335,7 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
       }
       log(`* settings updated: ${JSON.stringify(body)}`);
       broadcast('settings');
+      scheduleRound();
       return sendJson(res, 200, { settings: service.getSettings(), ...outcome });
     }
 
@@ -375,6 +414,9 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
   server.requestTimeout = 0;
   server.headersTimeout = 60_000;
 
+  // Pick up a round that was running before a restart (ending it now if it's overdue).
+  scheduleRound();
+
   return {
     server,
     hub,
@@ -382,6 +424,7 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
     close: () =>
       new Promise<void>((resolve) => {
         game.close();
+        clearTimeout(roundTimer ?? undefined);
         hub.close();
         server.close(() => resolve());
         server.closeAllConnections();

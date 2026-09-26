@@ -1,3 +1,4 @@
+import { createRoundPanel } from './round-panel.js';
 import { api } from './api.js';
 import { confirmDialog, editScoreDialog, toast } from './dialogs.js';
 import { h } from './dom.js';
@@ -112,12 +113,18 @@ async function deleteEntry(entry) {
   entryForm.focus();
 }
 
+// ---------- Prize round ----------
+
+const roundPanel = createRoundPanel();
+document.getElementById('round-root').append(roundPanel.el);
+
 // ---------- Live connection ----------
 
 connectLive({
   onUpdate: (message) => {
     snapshot = message.snapshot;
     entryForm.setSettings(snapshot);
+    roundPanel.update(snapshot);
     if (message.reason !== 'poll' && message.reason !== 'spotlight') void loadRecent();
   },
   onStatus: (state) => {
