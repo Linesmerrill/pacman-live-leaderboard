@@ -46,6 +46,12 @@ export interface AppConfig {
   idleMusicEnabled: boolean;
   /** Initial volume (0–100) of that background music, relative to the TV volume. */
   idleMusicVolume: number;
+  /** Show the how-to-play rules beside the leaderboard, for the kids waiting in line. */
+  rulesEnabled: boolean;
+  /** Share of the screen width the rules take, in percent (25–65). */
+  rulesPercent: number;
+  /** Seconds each rule stays up before the next one. */
+  rulesStepSeconds: number;
   /** Optional PIN required by staff screens. Empty string = no PIN. */
   adminPin: string;
   /** Highest Pac-Dot count staff can enter. */
@@ -76,6 +82,9 @@ export const DEFAULT_CONFIG: Readonly<AppConfig> = Object.freeze({
   maxPellets: 1,
   idleMusicEnabled: true,
   idleMusicVolume: 35,
+  rulesEnabled: true,
+  rulesPercent: 40,
+  rulesStepSeconds: 6,
   adminPin: '',
   maxScore: 999,
   maxTimeSeconds: 3600,
@@ -134,7 +143,7 @@ export function loadConfig(options: { file?: string; env?: NodeJS.ProcessEnv; ro
     (config as unknown as Record<string, unknown>)[k] = value;
   }
 
-  for (const k of ['port', 'leaderboardSize', 'boardColumns', 'pageSeconds', 'spotlightSeconds', 'maxScore', 'maxTimeSeconds', 'duplicateWarningSeconds', 'soundVolume', 'countdownSeconds', 'runSeconds', 'powerPelletSeconds', 'maxPellets', 'idleMusicVolume', 'wakaIntervalMs'] as const) {
+  for (const k of ['port', 'leaderboardSize', 'boardColumns', 'pageSeconds', 'spotlightSeconds', 'maxScore', 'maxTimeSeconds', 'duplicateWarningSeconds', 'soundVolume', 'countdownSeconds', 'runSeconds', 'powerPelletSeconds', 'maxPellets', 'idleMusicVolume', 'wakaIntervalMs', 'rulesPercent', 'rulesStepSeconds'] as const) {
     if (!Number.isInteger(config[k]) || config[k] < 0) throw new Error(`config: "${k}" must be a whole number ≥ 0`);
   }
   if (config.leaderboardSize < 3 || config.leaderboardSize > 20) throw new Error('config: "leaderboardSize" must be 3–20');
@@ -145,6 +154,8 @@ export function loadConfig(options: { file?: string; env?: NodeJS.ProcessEnv; ro
   if (config.runSeconds > 3600) throw new Error('config: "runSeconds" must be 0–3600 (0 = no time limit)');
   if (config.maxPellets > 20) throw new Error('config: "maxPellets" must be 0–20');
   if (config.idleMusicVolume > 100) throw new Error('config: "idleMusicVolume" must be 0–100');
+  if (config.rulesPercent < 25 || config.rulesPercent > 65) throw new Error('config: "rulesPercent" must be 25–65');
+  if (config.rulesStepSeconds < 3 || config.rulesStepSeconds > 30) throw new Error('config: "rulesStepSeconds" must be 3–30');
   if (config.wakaIntervalMs < 60 || config.wakaIntervalMs > 2000) throw new Error('config: "wakaIntervalMs" must be 60–2000');
 
   if (config.databaseFile !== ':memory:') config.databaseFile = path.resolve(root, config.databaseFile);

@@ -21,6 +21,12 @@ const els = {
   maxPellets: $('max-pellets'),
   runSave: $('run-save'),
   runMsg: $('run-msg'),
+  rulesToggle: $('rules-toggle'),
+  rulesToggleLabel: $('rules-toggle-label'),
+  rulesPercent: $('rules-percent'),
+  rulesPercentLabel: $('rules-percent-label'),
+  rulesSeconds: $('rules-seconds'),
+  rulesSecondsLabel: $('rules-seconds-label'),
   idleToggle: $('idle-toggle'),
   idleToggleLabel: $('idle-toggle-label'),
   idleVolume: $('idle-volume'),
@@ -151,6 +157,15 @@ function renderSettings() {
   els.idleToggleLabel.textContent = idleMusicEnabled ? 'On — plays between runs' : 'Off — silence between runs';
   if (document.activeElement !== els.idleVolume) els.idleVolume.value = String(idleMusicVolume);
   els.idleVolumeLabel.textContent = `${idleMusicVolume}%`;
+  const { rulesEnabled, rulesPercent, rulesStepSeconds } = state.settings;
+  els.rulesToggle.checked = rulesEnabled;
+  els.rulesToggleLabel.textContent = rulesEnabled ? 'On — rules beside the leaderboard' : 'Off — leaderboard fills the screen';
+  els.rulesPercent.disabled = !rulesEnabled;
+  els.rulesSeconds.disabled = !rulesEnabled;
+  if (document.activeElement !== els.rulesPercent) els.rulesPercent.value = String(rulesPercent);
+  if (document.activeElement !== els.rulesSeconds) els.rulesSeconds.value = String(rulesStepSeconds);
+  els.rulesPercentLabel.textContent = `${els.rulesPercent.value}% of the screen`;
+  els.rulesSecondsLabel.textContent = `${els.rulesSeconds.value} seconds`;
   els.builtinCount.textContent = String(builtInDenyListSize);
   if (!state.denyDirty && document.activeElement !== els.deny) els.deny.value = customDenyList.join(' ');
 }
@@ -205,6 +220,21 @@ els.idleVolume.addEventListener('input', () => {
   els.idleVolumeLabel.textContent = `${els.idleVolume.value}%`;
 });
 els.idleVolume.addEventListener('change', () => void saveIdleMusic({ idleMusicVolume: Number(els.idleVolume.value) }));
+
+els.rulesToggle.addEventListener('change', () => void saveIdleMusic({ rulesEnabled: els.rulesToggle.checked }));
+// Save while the slider moves (lightly throttled) so the TV resizes as you drag, and you can
+// stop when it looks right.
+let rulesSave = null;
+for (const [input, key, label, unit] of [
+  [els.rulesPercent, 'rulesPercent', els.rulesPercentLabel, '% of the screen'],
+  [els.rulesSeconds, 'rulesStepSeconds', els.rulesSecondsLabel, ' seconds'],
+]) {
+  input.addEventListener('input', () => {
+    label.textContent = `${input.value}${unit}`;
+    clearTimeout(rulesSave);
+    rulesSave = setTimeout(() => void saveIdleMusic({ [key]: Number(input.value) }), 200);
+  });
+}
 
 async function saveIdleMusic(patch) {
   try {

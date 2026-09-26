@@ -1,6 +1,14 @@
 /* Public TV leaderboard. Sizes use --u (1% of the 16:9-safe screen height) so it scales to any TV.
    Rows are size containers: their text auto-fits both the row height and the column width. */
 
+/* Registered, so each pane can compute its own --u from its own size and pass it down as a
+   plain length (row containers deeper down would otherwise re-resolve container units). */
+@property --u {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 8px;
+}
+
 :root {
   --u: min(1vh, 0.5625vw);
   --maze: #2447ff;
@@ -61,7 +69,35 @@ ol {
 
 /* ---------- Maze frame ---------- */
 
+/* ---------- Split screen: leaderboard + how-to-play ---------- */
+
+.stage {
+  position: absolute;
+  inset: 0;
+  --rules: 0%;
+}
+.stage.with-rules {
+  --rules: 40%;
+}
+.board-pane,
+.rules-pane {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  container-type: size;
+}
+.board-pane {
+  left: 0;
+  width: calc(100% - var(--rules));
+}
+.rules-pane {
+  right: 0;
+  width: var(--rules);
+}
+
 .frame {
+  /* Sized to its own half of the screen, not the whole TV. */
+  --u: min(1cqh, 0.5625cqw);
   position: absolute;
   inset: calc(var(--u) * 1.4);
   display: flex;
@@ -870,4 +906,250 @@ body[data-game-state='power-mode'] .frame::before {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/* ---------- How to play (the rules pane) ---------- */
+
+.rules-frame {
+  /* The pane is tall and narrow: size everything from its width, capped by its height. */
+  --u: min(1cqw, 0.62cqh);
+  position: absolute;
+  inset: calc(var(--u) * 2.2) calc(var(--u) * 2.2) calc(var(--u) * 2.2) 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 5) calc(var(--u) * 6) calc(var(--u) * 3);
+  border: calc(var(--u) * 0.7) solid var(--maze);
+  border-radius: calc(var(--u) * 5);
+  box-shadow: 0 0 calc(var(--u) * 2) var(--maze-glow), inset 0 0 calc(var(--u) * 2) var(--maze-glow);
+  transform: translate(var(--shift-x, 0px), var(--shift-y, 0px));
+  transition: transform 4s ease-in-out;
+}
+.rules-frame::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--u) * 1.6);
+  border: calc(var(--u) * 0.7) solid var(--maze);
+  border-radius: calc(var(--u) * 3.5);
+  box-shadow: 0 0 calc(var(--u) * 1.4) var(--maze-glow), inset 0 0 calc(var(--u) * 1.4) var(--maze-glow);
+  pointer-events: none;
+}
+body[data-game-state='power-mode'] .rules-frame,
+body[data-game-state='power-mode'] .rules-frame::before {
+  animation: power-walls 0.45s steps(1, end) infinite;
+}
+
+/* Text as big as it can be while fitting the pane: --tw is its width in font pixels. */
+.fit {
+  container-type: inline-size;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+.fit .px {
+  font-size: min(var(--max), calc(100cqw / var(--tw, 40)));
+}
+
+.rules-head {
+  flex: none;
+  width: 100%;
+  color: var(--cyan);
+  filter: drop-shadow(0 0 0.8em rgba(60, 242, 255, 0.55));
+  --max: calc(var(--u) * 1.1);
+}
+
+.rules-card {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-evenly;
+  gap: calc(var(--u) * 3);
+}
+.rules-card.enter {
+  animation: rule-in 0.45s ease-out both;
+}
+@keyframes rule-in {
+  from { opacity: 0; transform: translateX(calc(var(--u) * 8)); }
+  to { opacity: 1; transform: none; }
+}
+
+.rules-number {
+  width: 100%;
+  color: var(--peach);
+  --max: calc(var(--u) * 1.1);
+}
+.rules-number .rule-number {
+  width: 100%;
+}
+
+.rules-text {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--u) * 2.2);
+}
+.rule-title {
+  color: var(--yellow);
+  filter: drop-shadow(0.22em 0.22em 0 #e0261f) drop-shadow(0 0 0.8em rgba(255, 225, 53, 0.45));
+  --max: calc(var(--u) * 1.6);
+  margin-bottom: calc(var(--u) * 1);
+}
+.rule-line {
+  color: var(--white);
+  --max: calc(var(--u) * 1.15);
+}
+
+.rules-progress {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 3.2);
+  height: calc(var(--u) * 5);
+}
+.rules-progress span {
+  width: calc(var(--u) * 1.6);
+  height: calc(var(--u) * 1.6);
+  border-radius: 50%;
+  background: var(--peach);
+  box-shadow: 0 0 calc(var(--u) * 0.8) var(--peach);
+}
+.rules-progress span.done {
+  opacity: 0.25;
+  box-shadow: none;
+}
+.rules-progress span:has(.pacman) {
+  width: calc(var(--u) * 5);
+  height: calc(var(--u) * 5);
+  background: none;
+  box-shadow: none;
+}
+.rules-progress .pacman {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* The little stage each rule's animation plays on: a strip of maze corridor. */
+.rules-scene {
+  position: relative;
+  flex: none;
+  width: 100%;
+  height: min(calc(var(--u) * 52), 42cqh);
+  overflow: hidden;
+  border-top: calc(var(--u) * 0.6) solid var(--maze);
+  border-bottom: calc(var(--u) * 0.6) solid var(--maze);
+  box-shadow: 0 calc(var(--u) * -0.4) calc(var(--u) * 1.4) -0.2em var(--maze-glow), 0 calc(var(--u) * 0.4) calc(var(--u) * 1.4) -0.2em var(--maze-glow);
+}
+.rules-scene .actor {
+  position: absolute;
+  top: 50%;
+  width: calc(var(--u) * 24);
+  height: calc(var(--u) * 24);
+  transform: translate(-50%, -50%);
+}
+.rules-scene .actor > svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.rules-scene .actor.small {
+  top: 78%;
+  width: calc(var(--u) * 10);
+  height: calc(var(--u) * 10);
+}
+.rules-scene .pac svg {
+  filter: drop-shadow(0 0 calc(var(--u) * 1.2) rgba(255, 225, 53, 0.55));
+}
+.rules-scene .dot {
+  position: absolute;
+  top: 50%;
+  width: calc(var(--u) * 3.2);
+  height: calc(var(--u) * 3.2);
+  border-radius: 50%;
+  background: var(--peach);
+  box-shadow: 0 0 calc(var(--u) * 1) var(--peach);
+  transform: translate(-50%, -50%);
+}
+.rules-scene .dot.big {
+  width: calc(var(--u) * 9);
+  height: calc(var(--u) * 9);
+  box-shadow: 0 0 calc(var(--u) * 2.4) var(--peach);
+}
+.rules-scene .wall {
+  position: absolute;
+  left: 50%;
+  right: -2%;
+  height: 26%;
+  border: calc(var(--u) * 0.6) solid var(--maze);
+  border-radius: calc(var(--u) * 2);
+  box-shadow: 0 0 calc(var(--u) * 1.2) var(--maze-glow), inset 0 0 calc(var(--u) * 1.2) var(--maze-glow);
+}
+.rules-scene .wall-top { top: 4%; }
+.rules-scene .wall-bottom { bottom: 4%; }
+.rules-scene .bonus {
+  position: absolute;
+  left: 50%;
+  top: 6%;
+  color: var(--cyan);
+  font-size: calc(var(--u) * 1.5);
+  filter: drop-shadow(0 0 0.6em rgba(60, 242, 255, 0.8));
+}
+.rules-scene .clock-number {
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  transform: translateX(-50%);
+  color: var(--yellow);
+  font-size: calc(var(--u) * 3.2);
+  filter: drop-shadow(0 0 0.6em rgba(255, 225, 53, 0.6));
+}
+.rules-scene .clock-bar {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 72%;
+  height: calc(var(--u) * 2);
+  border: calc(var(--u) * 0.4) solid var(--maze);
+  border-radius: calc(var(--u) * 1);
+}
+.rules-scene .clock-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red), var(--yellow));
+  border-radius: calc(var(--u) * 0.6);
+}
+.rules-scene .mini-row {
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--u) * 3) calc(var(--u) * 4);
+  border: calc(var(--u) * 0.5) solid var(--maze);
+  border-radius: calc(var(--u) * 2);
+  font-size: calc(var(--u) * 1.3);
+}
+.rules-scene .mini-row.lit {
+  border-color: var(--yellow);
+  box-shadow: 0 0 calc(var(--u) * 2) rgba(255, 225, 53, 0.6);
+  animation: blink 0.5s steps(1, end) infinite;
+}
+.rules-scene .mini-rank { color: var(--yellow); }
+.rules-scene .mini-name { color: var(--white); }
+.rules-scene .mini-score { color: var(--cyan); }
+.rules-scene .fruit-actor {
+  top: 17%;
+  left: 50%;
+  width: calc(var(--u) * 13);
+  height: calc(var(--u) * 13);
+}
+.rules-scene[data-scene='board'] .fruit-actor {
+  left: 50%;
 }

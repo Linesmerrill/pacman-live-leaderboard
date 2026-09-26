@@ -83,6 +83,24 @@
         </div>
       </section>
 
+      <section class="card" aria-labelledby="rules-title">
+        <h2 id="rules-title">How to play (on the TV)</h2>
+        <p class="muted">The rules run beside the leaderboard for the kids waiting in line, one at a time with a little animation of each. High scores, the countdown and FINISH still take over the whole screen.</p>
+        <label class="switch">
+          <input type="checkbox" id="rules-toggle" role="switch">
+          <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
+          <span class="switch-label" id="rules-toggle-label">On</span>
+        </label>
+        <label class="field-label stacked" style="margin-top: 16px">
+          Rules width <span class="hint" id="rules-percent-label">40% of the screen</span>
+          <input id="rules-percent" type="range" min="25" max="65" step="5">
+        </label>
+        <label class="field-label stacked" style="margin-top: 16px">
+          Time on each rule <span class="hint" id="rules-seconds-label">6 seconds</span>
+          <input id="rules-seconds" type="range" min="3" max="20" step="1">
+        </label>
+      </section>
+
       <section class="card" aria-labelledby="idle-title">
         <h2 id="idle-title">Background music</h2>
         <p class="muted">A soft tune that plays on the TV between runs, and ducks under every sound effect. It stops while a run is under way.</p>

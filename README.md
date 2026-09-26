@@ -202,6 +202,18 @@ Restart the app after adding files (the folder is read at startup) and check wha
 right to use. The folder is git-ignored, so your sounds stay on the event Mac and this public
 repository never redistributes them.
 
+### How to play, beside the leaderboard
+
+The TV splits in two: the leaderboard on the left, and on the right the rules for the kids waiting
+in line, one at a time — **enter the maze, avoid the ghosts, collect Pac-Dots, grab the power pellet,
+beat the clock, get on the board** — each with a little looping animation of that moment. The run
+length and pellet time are quoted from your settings, so the rules stay honest if you change them.
+
+**Manage scores → How to play** has the switch, a **width slider** (25–65% of the screen; the TV
+resizes as you drag, so set it by eye on the night) and how long each rule stays up. The leaderboard
+keeps paging through every rank at any width. NEW HIGH SCORE, the 3·2·1 countdown and FINISH still
+take over the whole screen.
+
 ### Background music between runs
 
 A soft, original chiptune bed plays on the TV whenever a run *isn't* under way — idle board, READY,
@@ -371,6 +383,7 @@ Edit `config.json` and restart the app. Every key is optional.
 | `powerPelletSeconds` | `10` | Starting power-pellet time: power-mode length, and the time a pellet adds |
 | `maxPellets` | `1` | Starting cap on how many pellets add time to one run |
 | `idleMusicEnabled` · `idleMusicVolume` | `true` · `35` | Starting state of the background music between runs |
+| `rulesEnabled` · `rulesPercent` · `rulesStepSeconds` | `true` · `40` · `6` | The how-to-play rules beside the leaderboard: on/off, share of the screen width (25–65), seconds per rule |
 | `adminPin` | `""` | Staff PIN; empty = no PIN (env `ADMIN_PIN`) |
 | `maxScore` | `999` | Highest Pac-Dot count accepted |
 | `maxTimeSeconds` | `3600` | Longest completion time accepted |

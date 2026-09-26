@@ -6,6 +6,7 @@ import { formatTime, ordinal } from './format.js';
 import { connectLive } from './live.js';
 import { pageCount, pageForPosition, pageRange, splitColumns } from './paging.js';
 import { pixelText, pixelWidth } from './pixelfont.js';
+import { mountRules, setRules } from './rules.js';
 import { isSoundEnabled, loadAudioFiles, play, primeAudio, setIdleMusic, setLoop, setSoundEnabled, setVolume, skipTrack, soundForEntry } from './sounds.js';
 import { FRUIT_BY_RANK, GHOST_COLORS, ghost, pacman, scaredGhost, speaker } from './sprites.js';
 
@@ -30,6 +31,9 @@ const PAD_EM = 2;
 
 const $ = (id) => document.getElementById(id);
 const els = {
+  stage: $('stage'),
+  boardPane: $('board-pane'),
+  rulesPane: $('rules-pane'),
   frame: $('frame'),
   board: $('board'),
   topTitle: $('top-title'),
@@ -108,8 +112,11 @@ function display() {
 
 /** Columns that fit this screen's shape (a TV is ~16:9 → 3), capped by config. */
 function effectiveColumns() {
-  const aspect = window.innerWidth / Math.max(1, window.innerHeight);
-  const byShape = aspect >= 2.1 ? 4 : aspect >= 1.45 ? 3 : aspect >= 1.1 ? 2 : 1;
+  // The leaderboard's own half of the screen, not the whole TV: with the rules beside it, it's narrower.
+  const aspect = els.boardPane.clientWidth / Math.max(1, els.boardPane.clientHeight);
+  // Two columns hold on down to a squarish pane, so the paging column (where a kid ranked 20th
+  // finds themselves) survives with the rules beside it.
+  const byShape = aspect >= 2.1 ? 4 : aspect >= 1.45 ? 3 : aspect >= 0.55 ? 2 : 1;
   return Math.max(1, Math.min(display().columns, byShape));
 }
 
@@ -410,6 +417,7 @@ function handleUpdate(message) {
   applySoundSetting(snapshot.display.soundEnabled);
   setVolume(snapshot.display.soundVolume);
   setIdleMusic({ enabled: snapshot.display.idleMusicEnabled, volume: snapshot.display.idleMusicVolume });
+  applyRules(snapshot.display);
   if (state.game) setLoop(state.game.loop); // picks the bed back up if it was just switched on
   applyGame(message.game);
   if (reason === 'game') {
@@ -718,10 +726,24 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && !wakeLock) void keepScreenAwake();
 });
 
+/** The how-to-play pane: on/off, how much of the screen it takes, and its timing. */
+function applyRules(display) {
+  const enabled = display.rulesEnabled !== false;
+  els.stage.classList.toggle('with-rules', enabled);
+  els.stage.style.setProperty('--rules', enabled ? `${display.rulesPercent ?? 40}%` : '0%');
+  setRules({
+    enabled,
+    stepSeconds: display.rulesStepSeconds ?? 6,
+    runSeconds: display.runSeconds ?? 20,
+    powerPelletSeconds: display.powerPelletSeconds ?? 10,
+  });
+}
+
 function pixelShift() {
   const offset = () => `${Math.round(Math.random() * 8 - 4)}px`;
-  els.frame.style.setProperty('--shift-x', offset());
-  els.frame.style.setProperty('--shift-y', offset());
+  // Both panes drift together.
+  document.body.style.setProperty('--shift-x', offset());
+  document.body.style.setProperty('--shift-y', offset());
 }
 
 // Double-click the board (not the button) to toggle full screen when not in kiosk mode.
@@ -732,6 +754,13 @@ els.frame.addEventListener('dblclick', (event) => {
 });
 
 window.addEventListener('resize', () => render());
+// Re-lay the leaderboard (columns, paging) whenever its half of the screen changes size.
+let paneWidth = 0;
+new ResizeObserver(() => {
+  if (els.boardPane.clientWidth === paneWidth) return;
+  paneWidth = els.boardPane.clientWidth;
+  render();
+}).observe(els.boardPane);
 
 // The event's own sounds (assets/audio), if any were supplied.
 void fetch('/api/audio', { cache: 'no-store' })
@@ -739,6 +768,7 @@ void fetch('/api/audio', { cache: 'no-store' })
   .then((manifest) => loadAudioFiles(manifest, { wakaMs: manifest.wakaIntervalMs ?? 200 }))
   .catch(() => {});
 
+mountRules(els.rulesPane);
 setupStaticArt();
 renderSoundButton();
 wakeCursor();

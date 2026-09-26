@@ -87,6 +87,11 @@ export function pixelPath(text) {
   return result;
 }
 
+/** True when every character of `text` has a glyph (anything else would print as "?"). */
+export function canDraw(text) {
+  return [...String(text).toUpperCase()].every((ch) => ch in G);
+}
+
 /** Width of `text` in font pixels (multiply by the font-size to get CSS size). */
 export function pixelWidth(text) {
   return pixelPath(text).width;

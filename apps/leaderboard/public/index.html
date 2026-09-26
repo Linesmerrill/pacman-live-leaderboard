@@ -9,6 +9,8 @@
   <link rel="stylesheet" href="/css/ui.css">
 </head>
 <body>
+  <div class="stage" id="stage">
+  <div class="board-pane" id="board-pane">
   <div class="frame" id="frame">
     <span class="pellet tl"></span><span class="pellet tr"></span><span class="pellet bl"></span><span class="pellet br"></span>
 
@@ -52,6 +54,20 @@
     </footer>
 
     <div class="conn" id="conn" hidden></div>
+  </div>
+  </div>
+
+  <aside class="rules-pane" id="rules-pane" aria-label="How to play" hidden>
+    <div class="rules-frame">
+      <div class="rules-head"></div>
+      <div class="rules-card">
+        <div class="rules-number"></div>
+        <div class="rules-scene" aria-hidden="true"></div>
+        <div class="rules-text"></div>
+      </div>
+      <div class="rules-progress" aria-hidden="true"></div>
+    </div>
+  </aside>
   </div>
 
   <div class="overlay" id="overlay" hidden>

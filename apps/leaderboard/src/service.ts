@@ -20,6 +20,10 @@ export interface Settings {
   /** Soft background music between runs. */
   idleMusicEnabled: boolean;
   idleMusicVolume: number;
+  /** The how-to-play panel beside the leaderboard. */
+  rulesEnabled: boolean;
+  rulesPercent: number;
+  rulesStepSeconds: number;
   customDenyList: string[];
 }
 
@@ -28,6 +32,12 @@ export interface DisplaySettings {
   soundVolume: number;
   idleMusicEnabled: boolean;
   idleMusicVolume: number;
+  rulesEnabled: boolean;
+  rulesPercent: number;
+  rulesStepSeconds: number;
+  /** For the rules text: "20 SECONDS ON THE CLOCK", "+10 SECONDS". */
+  runSeconds: number;
+  powerPelletSeconds: number;
   rowsPerColumn: number;
   columns: number;
   pageSeconds: number;
@@ -78,6 +88,8 @@ const NUMERIC_SETTINGS = {
   powerPelletSeconds: { min: 1, max: 120 },
   maxPellets: { min: 0, max: 20 },
   idleMusicVolume: { min: 0, max: 100 },
+  rulesPercent: { min: 25, max: 65 },
+  rulesStepSeconds: { min: 3, max: 30 },
 } as const;
 const SETTING_DENY = 'customDenyList';
 const SUBMISSION_MEMORY_MS = 15 * 60 * 1000;
@@ -139,6 +151,7 @@ export class LeaderboardService {
       }
     }
     const idleMusic = this.#store.getSetting('idleMusicEnabled');
+    const rules = this.#store.getSetting('rulesEnabled');
     const numbers = Object.fromEntries(
       Object.entries(NUMERIC_SETTINGS).map(([key, range]) => {
         const stored = this.#store.getSetting(key);
@@ -153,6 +166,7 @@ export class LeaderboardService {
       soundEnabled: sound === null ? this.#config.soundEnabled : sound === 'true',
       soundVolume: Number.isFinite(volume) && volume >= 0 && volume <= 100 ? volume : this.#config.soundVolume,
       idleMusicEnabled: idleMusic === null ? this.#config.idleMusicEnabled : idleMusic === 'true',
+      rulesEnabled: rules === null ? this.#config.rulesEnabled : rules === 'true',
       ...numbers,
       customDenyList,
     };
@@ -168,7 +182,7 @@ export class LeaderboardService {
 
   updateSettings(patch: Record<string, unknown>): { rejectedDenyEntries: string[] } {
     let rejectedDenyEntries: string[] = [];
-    for (const [field, key] of [['completionTimeEnabled', SETTING_TIME], ['soundEnabled', SETTING_SOUND], ['idleMusicEnabled', 'idleMusicEnabled']] as const) {
+    for (const [field, key] of [['completionTimeEnabled', SETTING_TIME], ['soundEnabled', SETTING_SOUND], ['idleMusicEnabled', 'idleMusicEnabled'], ['rulesEnabled', 'rulesEnabled']] as const) {
       const value = patch[field];
       if (value === undefined) continue;
       if (typeof value !== 'boolean') throw new TypeError(`${field} must be true or false`);
@@ -227,7 +241,9 @@ export class LeaderboardService {
       completionTimeEnabled: this.#settings.completionTimeEnabled,
       maxScore: this.#config.maxScore,
       display: { soundEnabled: this.#settings.soundEnabled, soundVolume: this.#settings.soundVolume,
-        idleMusicEnabled: this.#settings.idleMusicEnabled, idleMusicVolume: this.#settings.idleMusicVolume, rowsPerColumn: leaderboardSize, columns: boardColumns, pageSeconds, spotlightSeconds },
+        idleMusicEnabled: this.#settings.idleMusicEnabled, idleMusicVolume: this.#settings.idleMusicVolume,
+        rulesEnabled: this.#settings.rulesEnabled, rulesPercent: this.#settings.rulesPercent, rulesStepSeconds: this.#settings.rulesStepSeconds,
+        runSeconds: this.#settings.runSeconds, powerPelletSeconds: this.#settings.powerPelletSeconds, rowsPerColumn: leaderboardSize, columns: boardColumns, pageSeconds, spotlightSeconds },
     };
   }
 
