@@ -1,0 +1,15 @@
+{
+  "//": "Browser code is plain JS. This checks it only for names that don't exist (see scripts/check-web.mjs).",
+  "compilerOptions": {
+    "target": "ES2024",
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "strict": false,
+    "skipLibCheck": true
+  },
+  "include": ["apps/leaderboard/public/js/*.js"]
+}

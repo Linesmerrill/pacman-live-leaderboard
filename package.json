@@ -15,7 +15,7 @@
     "start": "npm start --workspace @pacman/leaderboard",
     "dev": "npm run dev --workspace @pacman/leaderboard",
     "test": "npm test --workspace @pacman/leaderboard && npm test --workspace @pacman/streamdeck",
-    "typecheck": "tsc -p tsconfig.json && tsc -p apps/streamdeck/tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p apps/streamdeck/tsconfig.json && node scripts/check-web.mjs",
     "check": "npm run typecheck && npm test",
     "backup": "node --disable-warning=ExperimentalWarning scripts/backup.ts",
     "kiosk": "bash scripts/start-kiosk.sh",

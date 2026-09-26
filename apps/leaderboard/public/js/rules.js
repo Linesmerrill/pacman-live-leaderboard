@@ -7,7 +7,7 @@
 
 import { canDraw, pixelText, pixelWidth } from './pixelfont.js';
 import { DEFAULT_SCORING, FRUITS } from './scoring.js';
-import { FRUIT_ART, GHOST_COLORS, candy, ghost, pacman, scaredGhost } from './sprites.js';
+import { FRUIT_ART, GHOST_COLORS, candy, cherry, ghost, pacman, scaredGhost } from './sprites.js';
 
 /** The rules, in order. Pure: the tests check every line can be drawn by the pixel font. */
 /**
@@ -25,12 +25,12 @@ export function ruleSteps({ runSeconds = 20, powerPelletSeconds = 5, maxPellets 
         }
       : { scene: 'clock', title: 'BE QUICK!', lines: ['GRAB ALL THE', 'FRUIT YOU CAN!'] };
   return [
+    { scene: 'duo', title: '2 KIDS PER GAME', lines: ['START ON', 'OPPOSITE SIDES!'] },
     { scene: 'enter', title: 'ENTER THE MAZE', lines: ['WAIT FOR', '3 2 1 GO!'] },
     { scene: 'chase', title: 'AVOID THE GHOSTS', lines: ["DON'T GET", 'TAGGED!'] },
     { scene: 'fruit', title: 'COLLECT FRUIT', lines: ['EVERY FRUIT', 'IS POINTS!'] },
     { scene: 'power', title: 'POWER ORB', lines: ['ACTIVATE IT FOR', `${powerPelletSeconds} SECONDS OF`, 'POWER MODE!'] },
     { scene: 'tag', title: 'TAG THE GHOSTS', lines: ['IN POWER MODE', 'FOR POINTS!'] },
-    { scene: 'duo', title: '2 KIDS PER GAME', lines: ['START ON', 'OPPOSITE SIDES!'] },
     clock,
     { scene: 'board', title: 'GAME OVER!', lines: ['TELL STAFF YOUR', 'INITIALS TO GET', 'ON THE BOARD!'] },
     // Prize rounds, only while they're switched on.

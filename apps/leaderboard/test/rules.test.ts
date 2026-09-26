@@ -8,7 +8,7 @@ describe('how-to-play rules on the TV', () => {
     const steps = ruleSteps({ runSeconds: 20, powerPelletSeconds: 5, maxPellets: 1 });
     assert.deepEqual(
       steps.map((s) => s.title),
-      ['ENTER THE MAZE', 'AVOID THE GHOSTS', 'COLLECT FRUIT', 'POWER ORB', 'TAG THE GHOSTS', '2 KIDS PER GAME', 'BEAT THE CLOCK', 'GAME OVER!'],
+      ['2 KIDS PER GAME', 'ENTER THE MAZE', 'AVOID THE GHOSTS', 'COLLECT FRUIT', 'POWER ORB', 'TAG THE GHOSTS', 'BEAT THE CLOCK', 'GAME OVER!'],
     );
     assert.equal(new Set(steps.map((s) => s.scene)).size, steps.length, 'no two rules share an animation');
   });
