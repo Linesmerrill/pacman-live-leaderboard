@@ -70,10 +70,10 @@ export function editScoreDialog({ entry, showTime, maxScore, onSave }) {
     const form = h(
       'form',
       { class: 'dialog-body', method: 'dialog' },
-      h('h2', {}, `Edit ${entry.initials} — ${entry.score} Pac-Dots`),
+      h('h2', {}, `Edit ${entry.initials} — ${entry.score} points`),
       h('div', { class: 'dialog-grid' },
         h('label', { class: 'field-label' }, 'Player', initials, errorEl('initials')),
-        h('label', { class: 'field-label' }, 'Pac-Dots', score, errorEl('score')),
+        h('label', { class: 'field-label' }, 'Score', score, errorEl('score')),
         showTime ? h('label', { class: 'field-label span-2' }, 'Completion time (seconds)', time, errorEl('timeSeconds')) : null,
       ),
       general,

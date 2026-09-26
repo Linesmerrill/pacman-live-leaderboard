@@ -69,6 +69,52 @@ export function orange(className = '') {
   </svg>`;
 }
 
+export function apple(className = '') {
+  return `<svg class="fruit ${className}" viewBox="0 0 100 100" aria-hidden="true">
+    <path d="M50 34c-8-6-30-8-34 14-4 20 10 44 22 46 5 1 8-2 12-2s7 3 12 2c12-2 26-26 22-46-4-22-26-20-34-14z" fill="#ff2d3c"/>
+    <path d="M50 34c0-10 3-18 8-24" fill="none" stroke="#7a5a2b" stroke-width="5" stroke-linecap="round"/>
+    <path d="M55 22c8-9 22-8 26-3-7 8-19 8-26 3z" fill="#3ddc5c"/>
+    <circle cx="32" cy="50" r="5" fill="#fff" opacity=".6"/>
+  </svg>`;
+}
+
+export function melon(className = '') {
+  return `<svg class="fruit ${className}" viewBox="0 0 100 100" aria-hidden="true">
+    <ellipse cx="50" cy="58" rx="36" ry="32" fill="#3ddc5c"/>
+    <path d="M26 36c-8 14-8 30 0 44M42 28c-5 18-5 42 0 60M58 28c5 18 5 42 0 60M74 36c8 14 8 30 0 44" fill="none" stroke="#1f8f3a" stroke-width="4"/>
+    <path d="M50 26c0-8 2-13 6-17" fill="none" stroke="#7a5a2b" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="36" cy="46" r="5" fill="#fff" opacity=".55"/>
+  </svg>`;
+}
+
+export function galaxian(className = '') {
+  return `<svg class="fruit ${className}" viewBox="0 0 100 100" aria-hidden="true">
+    <path d="M50 12l10 24h-20z" fill="#ffe135"/>
+    <path d="M38 36h24l8 22H30z" fill="#2447ff"/>
+    <path d="M30 58L10 40l6 30 20 6zM70 58l20-18-6 30-20 6z" fill="#ff2d3c"/>
+    <path d="M40 58h20l-4 28h-12z" fill="#ffe135"/>
+  </svg>`;
+}
+
+export function bell(className = '') {
+  return `<svg class="fruit ${className}" viewBox="0 0 100 100" aria-hidden="true">
+    <path d="M50 14c-18 0-26 16-26 34 0 14-6 22-12 28h76c-6-6-12-14-12-28 0-18-8-34-26-34z" fill="#ffe135"/>
+    <circle cx="50" cy="84" r="8" fill="#ffe135"/>
+    <path d="M34 34c3-8 8-11 12-12" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".7"/>
+    <rect x="12" y="72" width="76" height="6" rx="3" fill="#2ef2ff"/>
+  </svg>`;
+}
+
+export function key(className = '') {
+  return `<svg class="fruit ${className}" viewBox="0 0 100 100" aria-hidden="true">
+    <circle cx="50" cy="28" r="17" fill="none" stroke="#2ef2ff" stroke-width="10"/>
+    <path d="M50 45v46M50 70h14M50 84h10" fill="none" stroke="#dff" stroke-width="9" stroke-linecap="square"/>
+  </svg>`;
+}
+
+/** Artwork for every fruit a bean bag can be, by id (see scoring.js). */
+export const FRUIT_ART = { cherry, strawberry, orange, apple, melon, galaxian, bell, key };
+
 export const FRUIT_BY_RANK = { 1: cherry, 2: strawberry, 3: orange };
 
 /** Speaker icon for the TV's sound toggle. */

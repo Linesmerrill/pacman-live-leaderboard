@@ -236,7 +236,7 @@ describe('LeaderboardService', () => {
     add('TOP', 9, { now: new Date(2026, 9, 31, 19, 6, 0).getTime() });
     const lines = fixture.service.exportCsv().trim().split('\n');
     assert.deepEqual(lines, [
-      'rank,player,pac_dots,completion_time_seconds,submitted_at',
+      'rank,player,score,completion_time_seconds,submitted_at',
       '1,TOP,9,,2026-10-31 19:06:00',
       '2,LOW,1,,2026-10-31 19:05:09',
     ]);

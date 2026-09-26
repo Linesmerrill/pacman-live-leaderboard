@@ -1,7 +1,7 @@
 /**
  * Pure ranking rules — no I/O, so they're easy to test.
  *
- * Order: most Pac-Dots first. When completion time is enabled, equal scores are broken by the
+ * Order: highest score first. When completion time is enabled, equal scores are broken by the
  * fastest time (runs without a time sort after timed runs). Anything still tied keeps the same
  * rank number ("1, 1, 3" competition ranking) and is listed earliest-submission first.
  */

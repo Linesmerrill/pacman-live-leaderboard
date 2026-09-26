@@ -21,9 +21,9 @@ $('brand').append(pixelText('PAC-MAN MAZE'));
 
 function celebrate({ entry, isNewHighScore }) {
   if (isNewHighScore) {
-    toast(h('span', {}, h('strong', {}, '★ NEW HIGH SCORE! '), `${entry.initials}: ${entry.score} Pac-Dots`), { tone: 'gold', duration: 4500 });
+    toast(h('span', {}, h('strong', {}, '★ NEW HIGH SCORE! '), `${entry.initials}: ${entry.score} points`), { tone: 'gold', duration: 4500 });
   } else {
-    toast(h('span', {}, h('strong', {}, `✓ ${entry.initials} added `), `${entry.score} Pac-Dots · ${ordinal(entry.rank).toLowerCase()} place`), { tone: 'ok' });
+    toast(h('span', {}, h('strong', {}, `✓ ${entry.initials} added `), `${entry.score} points · ${ordinal(entry.rank).toLowerCase()} place`), { tone: 'ok' });
   }
 }
 
@@ -47,7 +47,7 @@ function renderRecent() {
         'li',
         { class: `recent-item${entry.flagged ? ' flagged' : ''}` },
         h('span', { class: 'recent-initials' }, entry.initials),
-        h('span', { class: 'recent-score' }, `${entry.score}`, h('small', {}, ' dots')),
+        h('span', { class: 'recent-score' }, `${entry.score}`, h('small', {}, ' pts')),
         h('span', { class: 'recent-meta' }, `${ordinal(entry.rank).toLowerCase()}${entry.timeSeconds !== null ? ` · ${formatTime(entry.timeSeconds)}` : ''} · ${timeAgo(entry.createdAt)}`),
         entry.flagged ? h('span', { class: 'badge badge-danger', title: 'Matches the blocked list' }, 'Blocked word') : null,
         h('span', { class: 'recent-actions' },
@@ -96,7 +96,7 @@ async function editEntry(entry) {
 async function deleteEntry(entry) {
   const ok = await confirmDialog({
     title: `Delete ${entry.initials}?`,
-    message: `This removes ${entry.initials} (${entry.score} Pac-Dots) from the leaderboard.`,
+    message: `This removes ${entry.initials} (${entry.score} points) from the leaderboard.`,
     confirmLabel: 'Delete score',
     tone: 'danger',
   });

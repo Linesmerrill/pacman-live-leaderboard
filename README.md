@@ -3,8 +3,8 @@
 A retro arcade scoreboard for the Pac-Man Maze Halloween attraction. It runs entirely on one Mac mini
 connected to a TV — no internet, no accounts, no cloud.
 
-Kids run the maze collecting Pac-Dots (bean bags). Each Pac-Dot is 1 point. At the exit, staff count
-the dots, the child picks 3-character initials (`MAX`, `J07`, …), staff type them in, and the TV
+Kids run the maze collecting fruit bean bags and, in power mode, tagging ghosts. At the exit, staff
+tap in the fruit they brought back and how many ghosts they tagged (the app adds up the score), the child picks 3-character initials (`MAX`, `J07`, …), staff type them in, and the TV
 updates instantly — jumping straight to that kid's spot on the board so they can grab a photo.
 
 ![The TV leaderboard: top 10 pinned on the left, ranks 11–30 on the right, auto-paging through everyone else](docs/screenshots/tv-board.png)
@@ -64,7 +64,7 @@ Leave that Terminal window open. Stop the app with **Ctrl+C** (scores are alread
 
 - Click **+ ADD PLAYER** at the bottom of the leaderboard, **or just start typing the initials** —
   the entry panel pops open with the first letter already filled in.
-- Type 3 letters/numbers → the cursor jumps to **PAC-DOTS** → type the count (or use the big − / +).
+- Type 3 letters/numbers → tap each fruit they brought back and set the ghosts tagged → the score fills itself in (or type it, or use the big − / +).
 - Press **Enter** (or click **ADD TO LEADERBOARD**). The panel closes and the board shows the player.
 - **Esc** closes the panel. The panel has **Undo** for the last player you added, and a
   **Manage scores** link.
@@ -202,6 +202,24 @@ Restart the app after adding files (the folder is read at startup) and check wha
 right to use. The folder is git-ignored, so your sounds stay on the event Mac and this public
 repository never redistributes them.
 
+### Scoring: fruit and ghosts
+
+Each fruit bean bag is worth points, and so is each ghost tagged in power mode. Staff never add it
+up: on the entry screen (and the TV's **+ ADD PLAYER**) they tap a fruit tile for every bean bag the
+kid brought back — tap twice for two strawberries, **−** to take one off — and set **Ghosts tagged**.
+The score fills itself in, with the working shown (`2× Strawberry 60 + Orange 50 + 2× Ghosts 60 = 170`),
+and can still be typed or nudged by hand. Only the total is saved.
+
+**Manage scores → Scoring** sets what everything is worth and which fruit are in the maze. The
+defaults are the arcade's values ÷ 10, with the first five fruit switched on:
+
+| Cherry | Strawberry | Orange | Apple | Melon | Galaxian | Bell | Key |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 10 | 30 | 50 | 70 | 100 | 200 *(off)* | 300 *(off)* | 500 *(off)* |
+
+Ghosts double like the arcade — **20, 40, 80, 160** for the 1st to 4th ghost, the last value repeating
+after that — so two ghosts are worth 60. The TV's rules show these same values.
+
 ### How to play, beside the leaderboard
 
 The TV splits in two: the leaderboard on the left, and on the right the rules for the kids waiting
@@ -249,7 +267,7 @@ start, and otherwise the first click or keypress on the board unlocks it.
 Off by default. Turn it on in **Manage scores → Completion timer**. When on:
 
 - Staff see a **Completion time (seconds)** box (leave blank if a run wasn't timed).
-- Ranking is still **most Pac-Dots first**; equal scores are broken by the **fastest time**; untimed
+- Ranking is still **highest score first**; equal scores are broken by the **fastest time**; untimed
   runs rank after timed runs with the same score.
 - The TV adds a **TIME** column.
 
@@ -325,7 +343,7 @@ curl -X POST http://localhost:3000/api/game/power-up
 
 ## Mistake-proofing for staff
 
-- Big targets, Enter-to-advance, and a live “Ready: MAX with 12 Pac-Dots” summary before submitting.
+- Big targets, Enter-to-advance, and a live “Ready: MAX with 120 points” summary before submitting.
 - Double-clicks and double-taps can't add a score twice (the button locks, and every submission carries
   a one-time ID the server de-duplicates).
 - Same initials **and** same score within 60 seconds asks “Same player again?” — so a repeat tap is
@@ -386,7 +404,7 @@ Edit `config.json` and restart the app. Every key is optional.
 | `idleMusicEnabled` · `idleMusicVolume` | `true` · `35` | Starting state of the background music between runs |
 | `rulesEnabled` · `rulesPercent` · `rulesStepSeconds` | `true` · `40` · `6` | The how-to-play rules beside the leaderboard: on/off, share of the screen width (25–65), seconds per rule |
 | `adminPin` | `""` | Staff PIN; empty = no PIN (env `ADMIN_PIN`) |
-| `maxScore` | `999` | Highest Pac-Dot count accepted |
+| `maxScore` | `999` | Highest score accepted |
 | `maxTimeSeconds` | `3600` | Longest completion time accepted |
 | `duplicateWarningSeconds` | `60` | “Same player again?” window; `0` disables |
 

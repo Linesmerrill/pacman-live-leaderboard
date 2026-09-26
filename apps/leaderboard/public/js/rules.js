@@ -6,7 +6,8 @@
 // instant Pac-Man reaches it) and cleaned up when the rule changes.
 
 import { canDraw, pixelText, pixelWidth } from './pixelfont.js';
-import { GHOST_COLORS, cherry, ghost, orange, pacman, scaredGhost, strawberry } from './sprites.js';
+import { DEFAULT_SCORING, FRUITS } from './scoring.js';
+import { FRUIT_ART, GHOST_COLORS, ghost, pacman, scaredGhost } from './sprites.js';
 
 /** The rules, in order. Pure: the tests check every line can be drawn by the pixel font. */
 export function ruleSteps({ runSeconds = 20, powerPelletSeconds = 5, maxPellets = 1 } = {}) {
@@ -92,19 +93,21 @@ const SCENES = {
   },
 
   // A row of fruit; each disappears with a point pop the moment Pac-Man reaches it.
-  fruit(scene) {
-    const xs = [26, 50, 74];
+  fruit(scene, { scoring = DEFAULT_SCORING }) {
+    // The first three fruit actually in the maze, worth what the Scoring settings say.
+    const shown = FRUITS.filter((f) => scoring.fruits[f.id]?.enabled).slice(0, 3);
+    const xs = [26, 50, 74].slice(0, shown.length);
     const start = -12;
     const end = 112;
     const at = (x) => (x - start) / (end - start);
     const running = [];
     xs.forEach((x, i) => {
-      const item = actor([cherry, strawberry, orange][i](), 'fruit-actor');
+      const item = actor(FRUIT_ART[shown[i].id](), 'fruit-actor');
       item.style.left = `${x}%`;
       const pop = document.createElement('div');
       pop.className = 'bonus';
       pop.style.left = `${x}%`;
-      pop.append(pixelText(`+${(i + 1) * 100}`));
+      pop.append(pixelText(`+${scoring.fruits[shown[i].id].points}`));
       scene.append(item, pop);
       const t = at(x);
       running.push(
@@ -140,7 +143,7 @@ const SCENES = {
   },
 
   // Power mode: Pac-Man chases two blue ghosts and tags them, each one worth points.
-  tag(scene) {
+  tag(scene, { scoring = DEFAULT_SCORING }) {
     const catches = [0.45, 0.8];
     const running = [];
     catches.forEach((t, i) => {
@@ -149,7 +152,7 @@ const SCENES = {
       const pop = document.createElement('div');
       pop.className = 'bonus';
       pop.style.left = `${x}%`;
-      pop.append(pixelText(`+${(i + 1) * 200}`));
+      pop.append(pixelText(`+${scoring.ghosts[i]}`));
       scene.append(blue, pop);
       // The ghost flees just ahead of Pac-Man until he catches it.
       running.push(

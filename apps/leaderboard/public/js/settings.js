@@ -1,3 +1,5 @@
+import { DEFAULT_SCORING, FRUITS } from './scoring.js';
+import { FRUIT_ART } from './sprites.js';
 import { api } from './api.js';
 import { confirmDialog, editScoreDialog, toast } from './dialogs.js';
 import { h } from './dom.js';
@@ -21,6 +23,11 @@ const els = {
   maxPellets: $('max-pellets'),
   runSave: $('run-save'),
   runMsg: $('run-msg'),
+  scoringFruit: $('scoring-fruit'),
+  scoringGhosts: $('scoring-ghosts'),
+  scoringSave: $('scoring-save'),
+  scoringDefaults: $('scoring-defaults'),
+  scoringMsg: $('scoring-msg'),
   rulesToggle: $('rules-toggle'),
   rulesToggleLabel: $('rules-toggle-label'),
   rulesPercent: $('rules-percent'),
@@ -120,7 +127,7 @@ async function editEntry(entry) {
 async function deleteEntry(entry) {
   const ok = await confirmDialog({
     title: `Delete ${entry.initials}?`,
-    message: `This removes ${entry.initials} — ${entry.score} Pac-Dots (${ordinal(entry.rank).toLowerCase()} place) from the leaderboard.`,
+    message: `This removes ${entry.initials} — ${entry.score} points (${ordinal(entry.rank).toLowerCase()} place) from the leaderboard.`,
     confirmLabel: 'Delete score',
     tone: 'danger',
   });
@@ -145,7 +152,7 @@ els.sort.addEventListener('change', renderScores);
 function renderSettings() {
   const { completionTimeEnabled, soundEnabled, customDenyList, builtInDenyListSize } = state.settings;
   els.timeToggle.checked = completionTimeEnabled;
-  els.timeToggleLabel.textContent = completionTimeEnabled ? 'On — TIME column shown' : 'Off — ranked by Pac-Dots only';
+  els.timeToggleLabel.textContent = completionTimeEnabled ? 'On — TIME column shown' : 'Off — ranked by score only';
   els.soundToggle.checked = soundEnabled;
   els.soundToggleLabel.textContent = soundEnabled ? 'On — the TV plays arcade sounds' : 'Off — the TV is silent';
 
@@ -157,6 +164,7 @@ function renderSettings() {
   els.idleToggleLabel.textContent = idleMusicEnabled ? 'On — plays between runs' : 'Off — silence between runs';
   if (document.activeElement !== els.idleVolume) els.idleVolume.value = String(idleMusicVolume);
   els.idleVolumeLabel.textContent = `${idleMusicVolume}%`;
+  if (!state.scoringDirty) renderScoring(state.settings.scoring);
   const { rulesEnabled, rulesPercent, rulesStepSeconds } = state.settings;
   els.rulesToggle.checked = rulesEnabled;
   els.rulesToggleLabel.textContent = rulesEnabled ? 'On — rules beside the leaderboard' : 'Off — leaderboard fills the screen';
@@ -220,6 +228,72 @@ els.idleVolume.addEventListener('input', () => {
   els.idleVolumeLabel.textContent = `${els.idleVolume.value}%`;
 });
 els.idleVolume.addEventListener('change', () => void saveIdleMusic({ idleMusicVolume: Number(els.idleVolume.value) }));
+
+// ---------- Scoring ----------
+
+/** Draws the fruit and ghost rows from a scoring setup (the saved one, or the arcade defaults). */
+function renderScoring(scoring) {
+  els.scoringFruit.replaceChildren(
+    ...FRUITS.map((fruit) => {
+      const { points, enabled } = scoring.fruits[fruit.id];
+      const art = document.createElement('span');
+      art.className = 'scoring-art';
+      art.innerHTML = FRUIT_ART[fruit.id]();
+      const row = h('label', { class: `scoring-row${enabled ? '' : ' off'}` },
+        h('input', { type: 'checkbox', 'data-fruit': fruit.id, 'data-kind': 'enabled', checked: enabled, 'aria-label': `${fruit.name} in the maze` }),
+        art,
+        h('span', { class: 'scoring-name' }, fruit.name, h('small', {}, `arcade ${fruit.arcade}`)),
+        h('input', { type: 'number', min: '0', max: '999', step: '1', inputmode: 'numeric', value: String(points), 'data-fruit': fruit.id, 'data-kind': 'points', 'aria-label': `${fruit.name} points` }),
+        h('span', { class: 'hint' }, 'pts'));
+      return row;
+    }),
+  );
+  els.scoringGhosts.replaceChildren(
+    ...scoring.ghosts.map((value, i) =>
+      h('label', { class: 'scoring-ghost' }, h('span', {}, ['1st', '2nd', '3rd', '4th+'][i]),
+        h('input', { type: 'number', min: '0', max: '999', step: '1', inputmode: 'numeric', value: String(value), 'data-ghost': String(i), 'aria-label': `Points for ghost ${i + 1}` }))),
+  );
+}
+
+function readScoring() {
+  const fruits = {};
+  for (const fruit of FRUITS) {
+    fruits[fruit.id] = {
+      enabled: els.scoringFruit.querySelector(`[data-fruit="${fruit.id}"][data-kind="enabled"]`).checked,
+      points: Number(els.scoringFruit.querySelector(`[data-fruit="${fruit.id}"][data-kind="points"]`).value),
+    };
+  }
+  const ghosts = [...els.scoringGhosts.querySelectorAll('[data-ghost]')].map((input) => Number(input.value));
+  return { fruits, ghosts };
+}
+
+function markScoringDirty() {
+  state.scoringDirty = true;
+  els.scoringMsg.textContent = 'Unsaved changes';
+}
+for (const container of [els.scoringFruit, els.scoringGhosts]) {
+  container.addEventListener('input', markScoringDirty);
+  container.addEventListener('change', (event) => {
+    const row = event.target.closest('.scoring-row');
+    if (row && event.target.dataset.kind === 'enabled') row.classList.toggle('off', !event.target.checked);
+  });
+}
+els.scoringDefaults.addEventListener('click', () => {
+  renderScoring(DEFAULT_SCORING);
+  markScoringDirty();
+});
+els.scoringSave.addEventListener('click', async () => {
+  try {
+    const { settings } = await api('PUT', '/api/settings', { scoring: readScoring() });
+    state.settings = settings;
+    state.scoringDirty = false;
+    els.scoringMsg.textContent = '';
+    toast('Scoring saved — the entry screens pick it up straight away.', { tone: 'ok' });
+  } catch (err) {
+    toast(err.message, { tone: 'error' });
+  }
+  renderSettings();
+});
 
 els.rulesToggle.addEventListener('change', () => void saveIdleMusic({ rulesEnabled: els.rulesToggle.checked }));
 // Save while the slider moves (lightly throttled) so the TV resizes as you drag, and you can

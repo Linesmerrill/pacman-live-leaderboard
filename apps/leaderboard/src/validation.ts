@@ -29,10 +29,10 @@ export function validateInitials(raw: unknown, denyList: DenyList): string {
 export function validateScore(raw: unknown, maxScore: number): number {
   const value = typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : raw;
   if (typeof value !== 'number' || !Number.isInteger(value)) {
-    throw new ValidationError('score', 'Enter the number of Pac-Dots collected (a whole number).');
+    throw new ValidationError('score', 'Enter the score (a whole number).');
   }
   if (value < 0 || value > maxScore) {
-    throw new ValidationError('score', `Pac-Dots must be between 0 and ${maxScore}.`);
+    throw new ValidationError('score', `The score must be between 0 and ${maxScore}.`);
   }
   return value;
 }

@@ -142,7 +142,7 @@ function buildColumn(entries, { rows, withIcon, withTime, rankChars, rowTemplate
   if (withIcon) head.push(div('c-icon'));
   head.push(div('c-name', pixelText('PLAYER')), div('c-lead'));
   if (withTime) head.push(div('c-time', pixelText('TIME')));
-  head.push(div('c-score', pixelText('PAC-DOTS')));
+  head.push(div('c-score', pixelText('SCORE')));
   col.append(div('col-head', div('row-inner', ...head)));
 
   const list = document.createElement('ol');
@@ -166,7 +166,7 @@ function buildRow(entry, { withIcon, withTime, now }) {
   const addedAt = state.fresh.get(entry.id);
   if (addedAt !== undefined && now - addedAt < FLASH_MS) classes.push('fresh');
   row.className = classes.join(' ');
-  row.setAttribute('aria-label', `${ordinal(entry.rank)} place, ${entry.initials}, ${entry.score} Pac-Dots`);
+  row.setAttribute('aria-label', `${ordinal(entry.rank)} place, ${entry.initials}, ${entry.score} points`);
 
   const cells = [div('c-rank', pixelText(ordinal(entry.rank)))];
   if (withIcon) {
@@ -280,7 +280,7 @@ function renderTicker({ latest, totalPlayers }) {
     ? [
         pixelText('LAST RUN', 'label'),
         pixelText(latest.initials, 'value'),
-        pixelText(`${latest.score} DOTS`, 'value gold'),
+        pixelText(`${latest.score} PTS`, 'value gold'),
         pixelText(ordinal(latest.rank), 'value cyan'),
       ]
     : [pixelText('WAITING FOR THE FIRST RUN', 'label')];
@@ -381,7 +381,7 @@ async function playCelebrations() {
   state.overlayBusy = true;
   while (state.overlayQueue.length) {
     const { entry, withTime } = state.overlayQueue.shift();
-    const score = [pixelText(String(entry.score), 'num'), pixelText('PAC-DOTS')];
+    const score = [pixelText(String(entry.score), 'num'), pixelText('POINTS')];
     if (withTime && entry.timeSeconds !== null) score.push(pixelText('IN'), pixelText(formatTime(entry.timeSeconds), 'num'));
 
     const train = div('train');
@@ -417,7 +417,7 @@ function handleUpdate(message) {
   applySoundSetting(snapshot.display.soundEnabled);
   setVolume(snapshot.display.soundVolume);
   setIdleMusic({ enabled: snapshot.display.idleMusicEnabled, volume: snapshot.display.idleMusicVolume });
-  applyRules(snapshot.display);
+  applyRules({ ...snapshot.display, scoring: snapshot.scoring });
   if (state.game) setLoop(state.game.loop); // picks the bed back up if it was just switched on
   applyGame(message.game);
   if (reason === 'game') {
@@ -634,7 +634,7 @@ function renderLastAdded() {
   }
   els.entryLast.hidden = false;
   els.entryLast.replaceChildren(
-    h('span', {}, 'Last added: ', h('strong', {}, last.entry.initials), ` · ${last.entry.score} Pac-Dots`),
+    h('span', {}, 'Last added: ', h('strong', {}, last.entry.initials), ` · ${last.entry.score} points`),
     h('button', { type: 'button', class: 'btn btn-small btn-danger-ghost', onclick: undoLastAdded }, 'Undo'),
   );
 }
@@ -643,7 +643,7 @@ async function undoLastAdded() {
   const { entry } = state.lastAdded;
   const ok = await confirmDialog({
     title: `Remove ${entry.initials}?`,
-    message: `This deletes ${entry.initials} (${entry.score} Pac-Dots) from the leaderboard.`,
+    message: `This deletes ${entry.initials} (${entry.score} points) from the leaderboard.`,
     confirmLabel: 'Remove it',
     tone: 'danger',
   });
@@ -737,6 +737,7 @@ function applyRules(display) {
     runSeconds: display.runSeconds ?? 20,
     powerPelletSeconds: display.powerPelletSeconds ?? 5,
     maxPellets: display.maxPellets ?? 1,
+    scoring: display.scoring,
   });
 }
 

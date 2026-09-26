@@ -480,3 +480,71 @@ body.hide-time .time-col {
   width: 100%;
   accent-color: var(--yellow);
 }
+
+/* ---------- Scoring card ---------- */
+
+.scoring-fruit {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+.scoring-row {
+  display: grid;
+  grid-template-columns: auto 40px 1fr 88px auto;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.scoring-row input[type='checkbox'] {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--yellow);
+}
+.scoring-row.off {
+  opacity: 0.45;
+}
+.scoring-art .fruit {
+  width: 36px;
+  height: 36px;
+  display: block;
+}
+.scoring-name {
+  display: grid;
+  font-weight: 700;
+}
+.scoring-name small {
+  color: var(--muted);
+  font-weight: 500;
+}
+.scoring-row input[type='number'],
+.scoring-ghost input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: #000;
+  color: var(--yellow);
+  font: 800 20px/1 var(--mono);
+  text-align: right;
+}
+.scoring-ghosts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+}
+.scoring-ghost {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-weight: 700;
+}
+.row-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}

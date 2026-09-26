@@ -227,14 +227,14 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
       if (result.kind === 'possible-duplicate') {
         return sendJson(res, 409, {
           error: 'possible_duplicate',
-          message: `${result.existing.initials} with ${result.existing.score} Pac-Dots was added ${result.secondsAgo} seconds ago.`,
+          message: `${result.existing.initials} with ${result.existing.score} points was added ${result.secondsAgo} seconds ago.`,
           existing: result.existing,
           secondsAgo: result.secondsAgo,
         });
       }
       if (!result.replayed) {
         const { entry } = result;
-        log(`+ ${entry.initials} ${entry.score} dots${entry.timeSeconds !== null ? ` ${entry.timeSeconds}s` : ''} → rank ${entry.rank}${result.isNewHighScore ? ' (NEW HIGH SCORE)' : ''}`);
+        log(`+ ${entry.initials} ${entry.score} pts${entry.timeSeconds !== null ? ` ${entry.timeSeconds}s` : ''} → rank ${entry.rank}${result.isNewHighScore ? ' (NEW HIGH SCORE)' : ''}`);
         broadcast('added', { added: { entry, isNewHighScore: result.isNewHighScore } });
       }
       return sendJson(res, result.replayed ? 200 : 201, { entry: result.entry, isNewHighScore: result.isNewHighScore, replayed: result.replayed });

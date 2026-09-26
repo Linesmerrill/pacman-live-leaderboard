@@ -2,6 +2,8 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import type { AppConfig } from './config.ts';
 import { BUILT_IN_DENY_LIST, DenyList, parseDenyList } from './denylist.ts';
+// Plain JS shared with the browser; typed here where it's used.
+import { normalizeScoring } from '../public/js/scoring.js';
 import { isNewHighScore, rankScores, type RankedScore, type ScoreRecord } from './ranking.ts';
 import type { ScoreStore } from './store.ts';
 import { validateInitials, validateScore, validateTime, ValidationError } from './validation.ts';
@@ -24,7 +26,14 @@ export interface Settings {
   rulesEnabled: boolean;
   rulesPercent: number;
   rulesStepSeconds: number;
+  /** Points per fruit (and which fruit are in the maze), and per ghost tagged. */
+  scoring: Scoring;
   customDenyList: string[];
+}
+
+export interface Scoring {
+  fruits: Record<string, { points: number; enabled: boolean }>;
+  ghosts: number[];
 }
 
 export interface DisplaySettings {
@@ -52,6 +61,8 @@ export interface LeaderboardSnapshot {
   latest: RankedScore | null;
   completionTimeEnabled: boolean;
   maxScore: number;
+  /** For the staff score calculator and the rules on the TV. */
+  scoring: Scoring;
   display: DisplaySettings;
 }
 
@@ -153,6 +164,12 @@ export class LeaderboardService {
     }
     const idleMusic = this.#store.getSetting('idleMusicEnabled');
     const rules = this.#store.getSetting('rulesEnabled');
+    let scoring: Scoring;
+    try {
+      scoring = normalizeScoring(JSON.parse(this.#store.getSetting('scoring') ?? '{}')) as Scoring;
+    } catch {
+      scoring = normalizeScoring({}) as Scoring; // a damaged saved value never stops the board
+    }
     const numbers = Object.fromEntries(
       Object.entries(NUMERIC_SETTINGS).map(([key, range]) => {
         const stored = this.#store.getSetting(key);
@@ -169,6 +186,7 @@ export class LeaderboardService {
       idleMusicEnabled: idleMusic === null ? this.#config.idleMusicEnabled : idleMusic === 'true',
       rulesEnabled: rules === null ? this.#config.rulesEnabled : rules === 'true',
       ...numbers,
+      scoring,
       customDenyList,
     };
   }
@@ -202,6 +220,9 @@ export class LeaderboardService {
       const volume = Number(patch.soundVolume);
       if (!Number.isFinite(volume) || volume < 0 || volume > 100) throw new TypeError('soundVolume must be a number from 0 to 100');
       this.#store.setSetting(SETTING_VOLUME, String(Math.round(volume)));
+    }
+    if (patch.scoring !== undefined) {
+      this.#store.setSetting('scoring', JSON.stringify(normalizeScoring(patch.scoring as object)));
     }
     if (patch.customDenyList !== undefined) {
       const raw = patch.customDenyList;
@@ -241,6 +262,7 @@ export class LeaderboardService {
       latest,
       completionTimeEnabled: this.#settings.completionTimeEnabled,
       maxScore: this.#config.maxScore,
+      scoring: this.#settings.scoring,
       display: { soundEnabled: this.#settings.soundEnabled, soundVolume: this.#settings.soundVolume,
         idleMusicEnabled: this.#settings.idleMusicEnabled, idleMusicVolume: this.#settings.idleMusicVolume,
         rulesEnabled: this.#settings.rulesEnabled, rulesPercent: this.#settings.rulesPercent, rulesStepSeconds: this.#settings.rulesStepSeconds,
@@ -335,7 +357,7 @@ export class LeaderboardService {
   }
 
   exportCsv(): string {
-    const header = ['rank', 'player', 'pac_dots', 'completion_time_seconds', 'submitted_at'];
+    const header = ['rank', 'player', 'score', 'completion_time_seconds', 'submitted_at'];
     const lines = [header.join(',')];
     for (const entry of this.#rankAll()) {
       lines.push([entry.rank, entry.initials, entry.score, entry.timeSeconds, localDateTime(entry.createdAt)].map(csvCell).join(','));

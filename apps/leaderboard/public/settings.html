@@ -39,7 +39,7 @@
             <tr>
               <th scope="col">Rank</th>
               <th scope="col">Player</th>
-              <th scope="col" class="num">Pac-Dots</th>
+              <th scope="col" class="num">Score</th>
               <th scope="col" class="num time-col">Time</th>
               <th scope="col">Entered</th>
               <th scope="col"><span class="visually-hidden">Actions</span></th>
@@ -54,7 +54,7 @@
     <div class="settings-side">
       <section class="card" aria-labelledby="timer-title">
         <h2 id="timer-title">Completion timer</h2>
-        <p class="muted">When on, staff can enter each run’s time in seconds. Most Pac-Dots still wins; the faster time breaks ties. The TV adds a TIME column.</p>
+        <p class="muted">When on, staff can enter each run’s time in seconds. The highest score still wins; the faster time breaks ties. The TV adds a TIME column.</p>
         <label class="switch">
           <input type="checkbox" id="time-toggle" role="switch">
           <span class="switch-track" aria-hidden="true"><span class="switch-thumb"></span></span>
@@ -80,6 +80,19 @@
         <div class="inline-actions">
           <button type="button" class="btn" id="run-save">Save run timer</button>
           <span class="muted" id="run-msg" role="status"></span>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="scoring-title">
+        <h2 id="scoring-title">Scoring</h2>
+        <p class="muted">Staff tap the fruit a player brought back and how many ghosts they tagged; the score adds itself up. Switch on the fruit you actually have bean bags for, and set what each is worth. Defaults are the arcade values ÷ 10.</p>
+        <div class="scoring-fruit" id="scoring-fruit"></div>
+        <div class="field-label" style="margin-top: 16px">Ghosts tagged <span class="hint">points for the 1st, 2nd, 3rd and 4th ghost — the 4th value repeats after that</span></div>
+        <div class="scoring-ghosts" id="scoring-ghosts"></div>
+        <div class="row-actions" style="margin-top: 16px">
+          <button class="btn btn-primary" id="scoring-save" type="button">Save scoring</button>
+          <button class="btn btn-ghost" id="scoring-defaults" type="button">Arcade values</button>
+          <span class="hint" id="scoring-msg"></span>
         </div>
       </section>
 

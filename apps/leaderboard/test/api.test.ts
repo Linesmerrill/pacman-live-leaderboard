@@ -150,7 +150,7 @@ describe('HTTP API', () => {
 
     const csv = await h.call('GET', '/api/export.csv');
     assert.equal(csv.status, 200);
-    assert.match(csv.body, /^rank,player,pac_dots/);
+    assert.match(csv.body, /^rank,player,score/);
     assert.match(csv.body, /\n1,FIX,99,/);
 
     assert.equal((await h.call('DELETE', `/api/scores/${id}`)).status, 200);

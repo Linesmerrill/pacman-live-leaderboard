@@ -12,7 +12,7 @@ const summary = (ranked: ReturnType<typeof rankScores>) => ranked.map((r) => `${
 describe('rankScores — completion time disabled', () => {
   const options = { useTime: false };
 
-  test('orders by Pac-Dots, highest first', () => {
+  test('orders by score, highest first', () => {
     const ranked = rankScores([run('LOW', 3, 1), run('TOP', 20, 2), run('MID', 10, 3)], options);
     assert.deepEqual(summary(ranked), ['1:TOP', '2:MID', '3:LOW']);
   });

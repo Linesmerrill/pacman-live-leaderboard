@@ -54,7 +54,7 @@ export interface AppConfig {
   rulesStepSeconds: number;
   /** Optional PIN required by staff screens. Empty string = no PIN. */
   adminPin: string;
-  /** Highest Pac-Dot count staff can enter. */
+  /** Highest score staff can enter. */
   maxScore: number;
   /** Longest completion time staff can enter, in seconds. */
   maxTimeSeconds: number;
