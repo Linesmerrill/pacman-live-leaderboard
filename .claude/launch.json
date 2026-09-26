@@ -1,0 +1,16 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "pacman-maze-demo",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--disable-warning=ExperimentalWarning", "apps/leaderboard/src/server.ts"],
+      "port": 3100,
+      "env": {
+        "PORT": "3100",
+        "DB_PATH": "data/demo.db",
+        "BACKUP_DIR": "backups/demo"
+      }
+    }
+  ]
+}
