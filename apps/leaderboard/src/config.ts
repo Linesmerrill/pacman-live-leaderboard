@@ -78,7 +78,7 @@ export const DEFAULT_CONFIG: Readonly<AppConfig> = Object.freeze({
   wakaIntervalMs: 200,
   countdownSeconds: 3,
   runSeconds: 20,
-  powerPelletSeconds: 10,
+  powerPelletSeconds: 5,
   maxPellets: 1,
   idleMusicEnabled: true,
   idleMusicVolume: 35,

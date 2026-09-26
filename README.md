@@ -146,12 +146,12 @@ running, so a pellet taken with 1 second left doesn't restart the run, it extend
 
 ```
 20s run, pellet grabbed at 0:19
-   └─ clock becomes 0:30, power mode runs 0:19 → 0:29
-      then normal play resumes for a second and the run finishes at 0:30
+   └─ clock becomes 0:25, power mode runs 0:19 → 0:24
+      then normal play resumes for a second and the run finishes at 0:25
 ```
 
 **Pellets stop paying out.** `Pellets that add time` (1 by default) caps how many pellets extend one
-session — so with the defaults, a session is 20 seconds and never more than 30, and nobody can loop
+session — so with the defaults, a session is 20 seconds and never more than 25, and nobody can loop
 the maze while others queue. Beyond the cap, pellets still fire
 the sound, the blue ghosts and the flashing walls for everyone — they just don't add time.
 
@@ -206,7 +206,8 @@ repository never redistributes them.
 
 The TV splits in two: the leaderboard on the left, and on the right the rules for the kids waiting
 in line, one at a time — **enter the maze, avoid the ghosts, collect the fruit, activate the power orb,
-tag the ghosts in power mode, two kids per game from opposite sides** — each with a little looping animation of that moment. The power
+tag the ghosts in power mode, two kids per game from opposite sides, beat the clock, and
+tell staff your initials at game over** — each with a little looping animation of that moment. The power
 orb's time is quoted from your settings, so the rules stay honest if you change them.
 
 **Manage scores → How to play** has the switch, a **width slider** (25–65% of the screen; the TV
@@ -266,7 +267,7 @@ state — so the operator presses **one** button and the software does the rest:
 POWER UP pressed
    ├─ power-up sting, gameplay music swaps to power-mode music
    ├─ TV: ghosts turn blue, maze walls flash, POWER MODE counts down
-   └─ 10 seconds later, all by itself:
+   └─ 5 seconds later (the power-pellet time), all by itself:
         power-down sound → normal music resumes → state back to PLAYING
 ```
 
@@ -380,7 +381,7 @@ Edit `config.json` and restart the app. Every key is optional.
 | `wakaIntervalMs` | `200` | How often the eating-a-dot sound repeats during a run |
 | `countdownSeconds` | `3` | Length of the 3·2·1 countdown |
 | `runSeconds` | `20` | Starting run length; `0` = no limit (then use Manage scores → Run timer) |
-| `powerPelletSeconds` | `10` | Starting power-pellet time: power-mode length, and the time a pellet adds |
+| `powerPelletSeconds` | `5` | Starting power-pellet time: power-mode length, and the time a pellet adds |
 | `maxPellets` | `1` | Starting cap on how many pellets add time to one run |
 | `idleMusicEnabled` · `idleMusicVolume` | `true` · `35` | Starting state of the background music between runs |
 | `rulesEnabled` · `rulesPercent` · `rulesStepSeconds` | `true` · `40` · `6` | The how-to-play rules beside the leaderboard: on/off, share of the screen width (25–65), seconds per rule |

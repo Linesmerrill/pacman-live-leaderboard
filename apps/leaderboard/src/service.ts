@@ -38,6 +38,7 @@ export interface DisplaySettings {
   /** For the rules text: "20 SECONDS ON THE CLOCK", "+10 SECONDS". */
   runSeconds: number;
   powerPelletSeconds: number;
+  maxPellets: number;
   rowsPerColumn: number;
   columns: number;
   pageSeconds: number;
@@ -243,7 +244,7 @@ export class LeaderboardService {
       display: { soundEnabled: this.#settings.soundEnabled, soundVolume: this.#settings.soundVolume,
         idleMusicEnabled: this.#settings.idleMusicEnabled, idleMusicVolume: this.#settings.idleMusicVolume,
         rulesEnabled: this.#settings.rulesEnabled, rulesPercent: this.#settings.rulesPercent, rulesStepSeconds: this.#settings.rulesStepSeconds,
-        runSeconds: this.#settings.runSeconds, powerPelletSeconds: this.#settings.powerPelletSeconds, rowsPerColumn: leaderboardSize, columns: boardColumns, pageSeconds, spotlightSeconds },
+        runSeconds: this.#settings.runSeconds, powerPelletSeconds: this.#settings.powerPelletSeconds, maxPellets: this.#settings.maxPellets, rowsPerColumn: leaderboardSize, columns: boardColumns, pageSeconds, spotlightSeconds },
     };
   }
 

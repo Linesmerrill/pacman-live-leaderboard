@@ -735,7 +735,8 @@ function applyRules(display) {
     enabled,
     stepSeconds: display.rulesStepSeconds ?? 6,
     runSeconds: display.runSeconds ?? 20,
-    powerPelletSeconds: display.powerPelletSeconds ?? 10,
+    powerPelletSeconds: display.powerPelletSeconds ?? 5,
+    maxPellets: display.maxPellets ?? 1,
   });
 }
 

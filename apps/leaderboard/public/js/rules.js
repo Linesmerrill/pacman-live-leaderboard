@@ -9,7 +9,16 @@ import { canDraw, pixelText, pixelWidth } from './pixelfont.js';
 import { GHOST_COLORS, cherry, ghost, orange, pacman, scaredGhost, strawberry } from './sprites.js';
 
 /** The rules, in order. Pure: the tests check every line can be drawn by the pixel font. */
-export function ruleSteps({ powerPelletSeconds = 10 } = {}) {
+export function ruleSteps({ runSeconds = 20, powerPelletSeconds = 5, maxPellets = 1 } = {}) {
+  const clock =
+    runSeconds > 0
+      ? {
+          scene: 'clock',
+          title: 'BEAT THE CLOCK',
+          // Only promise extra time when a power orb actually adds some.
+          lines: [`${runSeconds} SECONDS`, 'TO PLAY', ...(maxPellets > 0 ? [`+${powerPelletSeconds} WITH THE ORB!`] : [])],
+        }
+      : { scene: 'clock', title: 'BE QUICK!', lines: ['GRAB ALL THE', 'FRUIT YOU CAN!'] };
   return [
     { scene: 'enter', title: 'ENTER THE MAZE', lines: ['WAIT FOR', '3 2 1 GO!'] },
     { scene: 'chase', title: 'AVOID THE GHOSTS', lines: ["DON'T GET", 'TAGGED!'] },
@@ -17,6 +26,8 @@ export function ruleSteps({ powerPelletSeconds = 10 } = {}) {
     { scene: 'power', title: 'POWER ORB', lines: ['ACTIVATE IT FOR', `${powerPelletSeconds} SECONDS OF`, 'POWER MODE!'] },
     { scene: 'tag', title: 'TAG THE GHOSTS', lines: ['IN POWER MODE', 'FOR POINTS!'] },
     { scene: 'duo', title: '2 KIDS PER GAME', lines: ['START ON', 'OPPOSITE SIDES!'] },
+    clock,
+    { scene: 'board', title: 'GAME OVER!', lines: ['TELL STAFF YOUR', 'INITIALS TO GET', 'ON THE BOARD!'] },
   ];
 }
 
@@ -165,11 +176,62 @@ const SCENES = {
       loop(blinky, [{ transform: 'translate(-50%, -80%)' }, { transform: 'translate(-50%, -20%)', offset: 0.5 }, { transform: 'translate(-50%, -80%)' }]),
     ];
   },
+  // A countdown from the run length to 0 while Pac-Man races along a draining bar.
+  clock(scene, { runSeconds }) {
+    const seconds = runSeconds > 0 ? runSeconds : 20;
+    const number = document.createElement('div');
+    number.className = 'clock-number';
+    const bar = html('<div class="clock-bar"><div class="clock-fill"></div></div>');
+    const pac = actor(pacman(), 'pac small');
+    scene.append(number, bar, pac);
+    const show = (n) => number.replaceChildren(pixelText(String(n)));
+    show(seconds);
+    const started = performance.now();
+    const timer = setInterval(() => {
+      const t = ((performance.now() - started) % LOOP_MS) / LOOP_MS;
+      show(Math.max(0, Math.ceil(seconds * (1 - t / 0.9))));
+    }, 80);
+    return [
+      loop(bar.firstElementChild, [{ width: '100%' }, { width: '0%', offset: 0.9 }, { width: '0%' }]),
+      loop(pac, [{ left: '8%' }, { left: '86%', offset: 0.9 }, { left: '86%' }]),
+      { cancel: () => clearInterval(timer) },
+    ];
+  },
+
+  // A scoreboard row fills in: initials typed, dots counted up, and it lights up.
+  board(scene) {
+    const row = document.createElement('div');
+    row.className = 'mini-row';
+    const rank = document.createElement('span');
+    const name = document.createElement('span');
+    const score = document.createElement('span');
+    rank.className = 'mini-rank';
+    name.className = 'mini-name';
+    score.className = 'mini-score';
+    rank.append(pixelText('1ST'));
+    row.append(rank, name, score);
+    const fruit = actor(cherry(), 'fruit-actor');
+    scene.append(row, fruit);
+    const started = performance.now();
+    let last = '';
+    const timer = setInterval(() => {
+      const t = ((performance.now() - started) % LOOP_MS) / LOOP_MS;
+      const initials = 'YOU'.slice(0, Math.min(3, Math.floor(t / 0.1)));
+      const points = t < 0.35 ? 0 : Math.min(42, Math.round(((t - 0.35) / 0.3) * 42));
+      const key = `${initials}|${points}`;
+      if (key === last) return;
+      last = key;
+      name.replaceChildren(pixelText(initials.padEnd(3, '-')));
+      score.replaceChildren(pixelText(String(points)));
+      row.classList.toggle('lit', t > 0.66);
+    }, 60);
+    return [loop(fruit, [{ transform: 'translate(-50%, -50%) rotate(-8deg)' }, { transform: 'translate(-50%, -60%) rotate(8deg)', offset: 0.5 }, { transform: 'translate(-50%, -50%) rotate(-8deg)' }]), { cancel: () => clearInterval(timer) }];
+  },
 };
 
 // ---------- Panel ----------
 
-const state = { els: null, options: { runSeconds: 20, powerPelletSeconds: 10, stepSeconds: 6 }, index: 0, running: [], timer: null, active: false };
+const state = { els: null, options: { runSeconds: 20, powerPelletSeconds: 5, maxPellets: 1, stepSeconds: 6 }, index: 0, running: [], timer: null, active: false };
 
 /** Draws text as large as it can be while still fitting the panel's width (see .fit in CSS). */
 function fitted(text, className) {
@@ -226,11 +288,10 @@ export function mountRules(root) {
 }
 
 /** Turn the panel on or off and apply the latest settings; restarts the cycle only when needed. */
-export function setRules({ enabled, stepSeconds, runSeconds, powerPelletSeconds }) {
+export function setRules({ enabled, ...options }) {
   if (!state.els) return;
-  const changed =
-    stepSeconds !== state.options.stepSeconds || runSeconds !== state.options.runSeconds || powerPelletSeconds !== state.options.powerPelletSeconds;
-  state.options = { stepSeconds, runSeconds, powerPelletSeconds };
+  const changed = JSON.stringify(options) !== JSON.stringify(state.options);
+  state.options = options;
   state.els.root.hidden = !enabled;
 
   if (!enabled) {

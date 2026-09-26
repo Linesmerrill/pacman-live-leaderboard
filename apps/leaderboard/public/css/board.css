@@ -1099,6 +1099,51 @@ body[data-game-state='power-mode'] .rules-frame::before {
   font-size: calc(var(--u) * 1.5);
   filter: drop-shadow(0 0 0.6em rgba(60, 242, 255, 0.8));
 }
+.rules-scene .clock-number {
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  transform: translateX(-50%);
+  color: var(--yellow);
+  font-size: calc(var(--u) * 3.2);
+  filter: drop-shadow(0 0 0.6em rgba(255, 225, 53, 0.6));
+}
+.rules-scene .clock-bar {
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  top: 72%;
+  height: calc(var(--u) * 2);
+  border: calc(var(--u) * 0.4) solid var(--maze);
+  border-radius: calc(var(--u) * 1);
+}
+.rules-scene .clock-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--red), var(--yellow));
+  border-radius: calc(var(--u) * 0.6);
+}
+.rules-scene .mini-row {
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(var(--u) * 3) calc(var(--u) * 4);
+  border: calc(var(--u) * 0.5) solid var(--maze);
+  border-radius: calc(var(--u) * 2);
+  font-size: calc(var(--u) * 1.3);
+}
+.rules-scene .mini-row.lit {
+  border-color: var(--yellow);
+  box-shadow: 0 0 calc(var(--u) * 2) rgba(255, 225, 53, 0.6);
+  animation: blink 0.5s steps(1, end) infinite;
+}
+.rules-scene .mini-rank { color: var(--yellow); }
+.rules-scene .mini-name { color: var(--white); }
+.rules-scene .mini-score { color: var(--cyan); }
 .rules-scene .fruit-actor {
   width: calc(var(--u) * 14);
   height: calc(var(--u) * 14);
@@ -1118,4 +1163,12 @@ body[data-game-state='power-mode'] .rules-frame::before {
   width: calc(var(--u) * 12);
   height: calc(var(--u) * 12);
   top: 50%;
+}
+
+/* GAME OVER: the cherry floats above the scoreboard row. */
+.rules-scene[data-scene='board'] .fruit-actor {
+  top: 17%;
+  left: 50%;
+  width: calc(var(--u) * 11);
+  height: calc(var(--u) * 11);
 }

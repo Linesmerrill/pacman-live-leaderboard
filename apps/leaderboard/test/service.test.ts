@@ -43,7 +43,8 @@ describe('LeaderboardService', () => {
       rulesPercent: 40,
       rulesStepSeconds: 6,
       runSeconds: 20,
-      powerPelletSeconds: 10,
+      powerPelletSeconds: 5,
+      maxPellets: 1,
       rowsPerColumn: 3,
       columns: 2,
       pageSeconds: 7,
@@ -130,9 +131,9 @@ describe('LeaderboardService', () => {
   test('ships with the run timing chosen for this event', () => {
     fixture = makeFixture();
     const { runSeconds, powerPelletSeconds, maxPellets } = fixture.service.getSettings();
-    assert.deepEqual({ runSeconds, powerPelletSeconds, maxPellets }, { runSeconds: 20, powerPelletSeconds: 10, maxPellets: 1 });
+    assert.deepEqual({ runSeconds, powerPelletSeconds, maxPellets }, { runSeconds: 20, powerPelletSeconds: 5, maxPellets: 1 });
     // Worst case for one maze session, so the queue keeps moving.
-    assert.equal(runSeconds + powerPelletSeconds * maxPellets, 30);
+    assert.equal(runSeconds + powerPelletSeconds * maxPellets, 25);
   });
 
   test('run timing and idle music are saved settings staff can change mid-event', () => {
