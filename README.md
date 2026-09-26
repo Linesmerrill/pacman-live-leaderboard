@@ -205,9 +205,9 @@ repository never redistributes them.
 ### How to play, beside the leaderboard
 
 The TV splits in two: the leaderboard on the left, and on the right the rules for the kids waiting
-in line, one at a time — **enter the maze, avoid the ghosts, collect Pac-Dots, grab the power pellet,
-beat the clock, get on the board** — each with a little looping animation of that moment. The run
-length and pellet time are quoted from your settings, so the rules stay honest if you change them.
+in line, one at a time — **enter the maze, avoid the ghosts, collect the fruit, activate the power orb,
+tag the ghosts in power mode, two kids per game from opposite sides** — each with a little looping animation of that moment. The power
+orb's time is quoted from your settings, so the rules stay honest if you change them.
 
 **Manage scores → How to play** has the switch, a **width slider** (25–65% of the screen; the TV
 resizes as you drag, so set it by eye on the night) and how long each rule stays up. The leaderboard

@@ -8,17 +8,14 @@ describe('how-to-play rules on the TV', () => {
     const steps = ruleSteps({ runSeconds: 20, powerPelletSeconds: 10 });
     assert.deepEqual(
       steps.map((s) => s.title),
-      ['ENTER THE MAZE', 'AVOID THE GHOSTS', 'COLLECT PAC-DOTS', 'POWER PELLET', 'BEAT THE CLOCK', 'GET ON THE BOARD'],
+      ['ENTER THE MAZE', 'AVOID THE GHOSTS', 'COLLECT FRUIT', 'POWER ORB', 'TAG THE GHOSTS', '2 KIDS PER GAME'],
     );
     assert.equal(new Set(steps.map((s) => s.scene)).size, steps.length, 'no two rules share an animation');
   });
 
-  test('quote the real timings from the settings', () => {
-    const text = allRuleText({ runSeconds: 45, powerPelletSeconds: 15 }).join(' ');
-    assert.match(text, /45 SECONDS/);
-    assert.match(text, /\+15 SECONDS/);
-    // With no time limit there is no clock to beat.
-    assert.ok(!allRuleText({ runSeconds: 0, powerPelletSeconds: 10 }).includes('0 SECONDS'));
+  test('the power orb quotes the power time from the settings', () => {
+    const orb = ruleSteps({ powerPelletSeconds: 15 }).find((s) => s.scene === 'power');
+    assert.ok(orb!.lines.includes('15 SECONDS OF'), orb!.lines.join(' / '));
   });
 
   test('every line can be drawn by the pixel font, whatever the settings', () => {

@@ -6,19 +6,17 @@
 // instant Pac-Man reaches it) and cleaned up when the rule changes.
 
 import { canDraw, pixelText, pixelWidth } from './pixelfont.js';
-import { GHOST_COLORS, cherry, ghost, pacman, scaredGhost } from './sprites.js';
+import { GHOST_COLORS, cherry, ghost, orange, pacman, scaredGhost, strawberry } from './sprites.js';
 
 /** The rules, in order. Pure: the tests check every line can be drawn by the pixel font. */
-export function ruleSteps({ runSeconds = 20, powerPelletSeconds = 10 } = {}) {
+export function ruleSteps({ powerPelletSeconds = 10 } = {}) {
   return [
     { scene: 'enter', title: 'ENTER THE MAZE', lines: ['WAIT FOR', '3 2 1 GO!'] },
     { scene: 'chase', title: 'AVOID THE GHOSTS', lines: ["DON'T GET", 'TAGGED!'] },
-    { scene: 'dots', title: 'COLLECT PAC-DOTS', lines: ['EVERY DOT IS', '1 POINT'] },
-    { scene: 'power', title: 'POWER PELLET', lines: [`+${powerPelletSeconds} SECONDS`, 'FOR EVERYONE!'] },
-    runSeconds > 0
-      ? { scene: 'clock', title: 'BEAT THE CLOCK', lines: [`${runSeconds} SECONDS`, 'TO GRAB DOTS!'] }
-      : { scene: 'clock', title: 'BE QUICK!', lines: ['GRAB ALL THE', 'DOTS YOU CAN!'] },
-    { scene: 'board', title: 'GET ON THE BOARD', lines: ['TELL STAFF YOUR', '3 INITIALS'] },
+    { scene: 'fruit', title: 'COLLECT FRUIT', lines: ['EVERY FRUIT', 'IS POINTS!'] },
+    { scene: 'power', title: 'POWER ORB', lines: ['ACTIVATE IT FOR', `${powerPelletSeconds} SECONDS OF`, 'POWER MODE!'] },
+    { scene: 'tag', title: 'TAG THE GHOSTS', lines: ['IN POWER MODE', 'FOR POINTS!'] },
+    { scene: 'duo', title: '2 KIDS PER GAME', lines: ['START ON', 'OPPOSITE SIDES!'] },
   ];
 }
 
@@ -82,27 +80,30 @@ const SCENES = {
     ];
   },
 
-  // A row of dots; each disappears the moment Pac-Man reaches it.
-  dots(scene) {
-    const xs = [14, 26, 38, 50, 62, 74, 86];
+  // A row of fruit; each disappears with a point pop the moment Pac-Man reaches it.
+  fruit(scene) {
+    const xs = [26, 50, 74];
     const start = -12;
     const end = 112;
-    const dots = xs.map((x) => {
-      const d = dot();
-      d.style.left = `${x}%`;
-      scene.append(d);
-      return d;
+    const at = (x) => (x - start) / (end - start);
+    const running = [];
+    xs.forEach((x, i) => {
+      const item = actor([cherry, strawberry, orange][i](), 'fruit-actor');
+      item.style.left = `${x}%`;
+      const pop = document.createElement('div');
+      pop.className = 'bonus';
+      pop.style.left = `${x}%`;
+      pop.append(pixelText(`+${(i + 1) * 100}`));
+      scene.append(item, pop);
+      const t = at(x);
+      running.push(
+        loop(item, [{ opacity: 1 }, { opacity: 1, offset: t }, { opacity: 0, offset: Math.min(1, t + 0.01) }, { opacity: 0, offset: 0.97 }, { opacity: 1 }]),
+        loop(pop, [{ opacity: 0, transform: 'translate(-50%, 0)' }, { opacity: 0, offset: t }, { opacity: 1, transform: 'translate(-50%, -40%)', offset: Math.min(0.99, t + 0.06) }, { opacity: 0, transform: 'translate(-50%, -90%)', offset: Math.min(1, t + 0.3) }, { opacity: 0, transform: 'translate(-50%, -90%)' }]),
+      );
     });
     const pac = actor(pacman(), 'pac');
     scene.append(pac);
-    const at = (x) => (x - start) / (end - start);
-    return [
-      loop(pac, [{ left: `${start}%` }, { left: `${end}%` }]),
-      ...dots.map((d, i) => {
-        const t = at(xs[i]);
-        return loop(d, [{ opacity: 1 }, { opacity: 1, offset: t }, { opacity: 0, offset: Math.min(1, t + 0.01) }, { opacity: 0, offset: 0.97 }, { opacity: 1 }]);
-      }),
-    ];
+    return [loop(pac, [{ left: `${start}%` }, { left: `${end}%` }]), ...running];
   },
 
   // Pac-Man eats the big pellet, the ghost turns blue and runs, "+10" pops up.
@@ -114,7 +115,7 @@ const SCENES = {
     const blue = actor(scaredGhost(), 'ghost-actor');
     const bonus = document.createElement('div');
     bonus.className = 'bonus';
-    bonus.append(pixelText(`+${powerPelletSeconds}`));
+    bonus.append(pixelText(`${powerPelletSeconds} SEC`));
     scene.append(pellet, pac, angry, blue, bonus);
     const eaten = 0.42;
     const ghostPath = [{ left: '80%' }, { left: '66%', offset: eaten }, { left: '112%' }];
@@ -127,56 +128,42 @@ const SCENES = {
     ];
   },
 
-  // A countdown from the run length to 0 while Pac-Man races along a draining bar.
-  clock(scene, { runSeconds }) {
-    const seconds = runSeconds > 0 ? runSeconds : 20;
-    const number = document.createElement('div');
-    number.className = 'clock-number';
-    const bar = html('<div class="clock-bar"><div class="clock-fill"></div></div>');
-    const pac = actor(pacman(), 'pac small');
-    scene.append(number, bar, pac);
-    const show = (n) => number.replaceChildren(pixelText(String(n)));
-    show(seconds);
-    const started = performance.now();
-    const timer = setInterval(() => {
-      const t = ((performance.now() - started) % LOOP_MS) / LOOP_MS;
-      show(Math.max(0, Math.ceil(seconds * (1 - t / 0.9))));
-    }, 80);
-    return [
-      loop(bar.firstElementChild, [{ width: '100%' }, { width: '0%', offset: 0.9 }, { width: '0%' }]),
-      loop(pac, [{ left: '8%' }, { left: '86%', offset: 0.9 }, { left: '86%' }]),
-      { cancel: () => clearInterval(timer) },
-    ];
+  // Power mode: Pac-Man chases two blue ghosts and tags them, each one worth points.
+  tag(scene) {
+    const catches = [0.45, 0.8];
+    const running = [];
+    catches.forEach((t, i) => {
+      const x = 12 + t * 100 * 0.95;
+      const blue = actor(scaredGhost(), 'ghost-actor');
+      const pop = document.createElement('div');
+      pop.className = 'bonus';
+      pop.style.left = `${x}%`;
+      pop.append(pixelText(`+${(i + 1) * 200}`));
+      scene.append(blue, pop);
+      // The ghost flees just ahead of Pac-Man until he catches it.
+      running.push(
+        loop(blue, [{ left: `${x - 30}%`, opacity: 1 }, { left: `${x}%`, opacity: 1, offset: t }, { left: `${x}%`, opacity: 0, offset: Math.min(1, t + 0.01) }, { left: `${x}%`, opacity: 0 }]),
+        loop(pop, [{ opacity: 0, transform: 'translate(-50%, 0)' }, { opacity: 0, offset: t }, { opacity: 1, transform: 'translate(-50%, -40%)', offset: Math.min(0.99, t + 0.06) }, { opacity: 0, transform: 'translate(-50%, -90%)', offset: Math.min(1, t + 0.3) }, { opacity: 0, transform: 'translate(-50%, -90%)' }]),
+      );
+    });
+    const pac = actor(pacman(), 'pac');
+    scene.append(pac);
+    return [loop(pac, [{ left: '-12%' }, { left: '100%', offset: 0.95 }, { left: '112%' }]), ...running];
   },
 
-  // A scoreboard row fills in: initials typed, dots counted up, and it lights up.
-  board(scene) {
-    const row = document.createElement('div');
-    row.className = 'mini-row';
-    const rank = document.createElement('span');
-    const name = document.createElement('span');
-    const score = document.createElement('span');
-    rank.className = 'mini-rank';
-    name.className = 'mini-name';
-    score.className = 'mini-score';
-    rank.append(pixelText('1ST'));
-    row.append(rank, name, score);
-    const fruit = actor(cherry(), 'fruit-actor');
-    scene.append(row, fruit);
-    const started = performance.now();
-    let last = '';
-    const timer = setInterval(() => {
-      const t = ((performance.now() - started) % LOOP_MS) / LOOP_MS;
-      const initials = 'YOU'.slice(0, Math.min(3, Math.floor(t / 0.1)));
-      const points = t < 0.35 ? 0 : Math.min(42, Math.round(((t - 0.35) / 0.3) * 42));
-      const key = `${initials}|${points}`;
-      if (key === last) return;
-      last = key;
-      name.replaceChildren(pixelText(initials.padEnd(3, '-')));
-      score.replaceChildren(pixelText(String(points)));
-      row.classList.toggle('lit', t > 0.66);
-    }, 60);
-    return [loop(fruit, [{ transform: 'translate(-50%, -50%) rotate(-8deg)' }, { transform: 'translate(-50%, -60%) rotate(8deg)', offset: 0.5 }, { transform: 'translate(-50%, -50%) rotate(-8deg)' }]), { cancel: () => clearInterval(timer) }];
+  // Two players, one at each end, heading into the maze from opposite sides.
+  duo(scene) {
+    scene.append(html('<div class="wall wall-middle"></div>'));
+    const left = actor(pacman(), 'pac');
+    const right = actor(pacman(), 'pac facing-left');
+    const blinky = actor(ghost(GHOST_COLORS.red), 'ghost-actor small-ghost');
+    blinky.style.left = '50%';
+    scene.append(left, right, blinky);
+    return [
+      loop(left, [{ left: '-12%' }, { left: '26%', offset: 0.55 }, { left: '26%' }]),
+      loop(right, [{ left: '112%' }, { left: '74%', offset: 0.55 }, { left: '74%' }]),
+      loop(blinky, [{ transform: 'translate(-50%, -80%)' }, { transform: 'translate(-50%, -20%)', offset: 0.5 }, { transform: 'translate(-50%, -80%)' }]),
+    ];
   },
 };
 
