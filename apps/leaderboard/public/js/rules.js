@@ -341,7 +341,7 @@ export function setRules({ enabled, ...options }) {
   state.active = true;
   clearInterval(state.timer);
   show(state.index);
-  state.timer = setInterval(() => show(state.index + 1), stepSeconds * 1000);
+  state.timer = setInterval(() => show(state.index + 1), options.stepSeconds * 1000);
 }
 
 /** For the staff screen and tests: jump straight to a rule. */
