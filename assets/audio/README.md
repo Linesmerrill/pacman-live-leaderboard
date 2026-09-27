@@ -55,8 +55,8 @@ Songs play at their own recorded level — measured, that lands about level with
 and skip the softening filter the built-in chiptune goes through, so they keep their treble. How loud
 they sit under the room is the **Background music** volume slider in Manage scores.
 
-Songs are yours to supply and stay on this Mac: like everything else in this folder, they're ignored
-by git.
+The songs are the event's own and are committed with the repo, so a fresh clone comes with its music.
+Everything else in this folder (the arcade sound effects) stays out of git.
 
 
 
