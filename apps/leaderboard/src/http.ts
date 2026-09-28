@@ -226,6 +226,10 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
         return sendJson(res, 200, { command, applied: true, entry: latest, status: game.status });
       }
       const result = game.command(command);
+      // Hardware triggers (a power-up sensor in a maze corner) can say where they are with
+      // ?source=corner-ne, so the log shows which one fired. Letters, digits and dashes only.
+      const source = (new URL(req.url ?? '/', 'http://localhost').searchParams.get('source') ?? '').replace(/[^A-Za-z0-9-]/g, '').slice(0, 32);
+      if (source) log(`  ↳ ${command} from ${source}${result.applied ? '' : ' (ignored: no run in progress)'}`);
       // `applied: false` = the command didn't fit the current state (e.g. POWER UP before START).
       // It's not an error: a controller button should never blow up in the operator's face.
       return sendJson(res, 200, { command, ...result });

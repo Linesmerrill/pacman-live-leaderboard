@@ -281,6 +281,22 @@ describe('HTTP API', () => {
     assert.equal(prev.body.status.state, before.state);
   });
 
+  test('a power-up sensor can name its corner, and is ignored between runs', async () => {
+    // What an ESP32 or Raspberry Pi in a maze corner sends (see hardware/README.md).
+    await h.call('POST', '/api/game/reset');
+    const idle = await h.call('POST', '/api/game/power-up?source=corner-ne');
+    assert.equal(idle.status, 200, 'a trigger between runs must never error');
+    assert.equal(idle.body.applied, false);
+
+    await h.call('POST', '/api/game/start');
+    // Junk in the name is dropped rather than rejected: the corner still works.
+    const live = await h.call('POST', '/api/game/power-up?source=corner%20ne%3Cscript%3E');
+    assert.equal(live.status, 200);
+    assert.equal(live.body.applied, true);
+    assert.equal(live.body.status.state, 'power-mode');
+    await h.call('POST', '/api/game/reset');
+  });
+
   test('volume and mute commands update the saved settings', async () => {
     await h.call('PUT', '/api/settings', { soundEnabled: true, soundVolume: 50 });
     await h.call('POST', '/api/game/volume-up');

@@ -102,7 +102,7 @@ refreshes, closed tabs, app restarts and Mac restarts.
 
 | Task | How |
 | --- | --- |
-| **Export to spreadsheet** | Manage scores → **Download CSV** (rank, player, pac_dots, completion_time_seconds, submitted_at) |
+| **Export to spreadsheet** | Manage scores → **Download CSV** (rank, player, score, completion_time_seconds, submitted_at) |
 | **Backup** | Manage scores → **Save backup now**, or in Terminal: `npm run backup`. Files go to `backups/`. Safe while the app is running. |
 | **Reset for a new night** | Manage scores → **Clear leaderboard…** → type `RESET`. A backup is saved automatically first (`backups/pacman-maze-before-reset-….db`). |
 | **Restore a backup** | Stop the app (Ctrl+C), copy the backup over `data/pacman-maze.db` (delete any `data/pacman-maze.db-wal` / `-shm` files), then `npm start`. |
@@ -349,6 +349,24 @@ how to point the keys at another Mac, are in [`apps/streamdeck/README.md`](apps/
 ```bash
 curl -X POST http://localhost:3000/api/game/power-up
 ```
+
+## Power-up sensors in the maze (Arduino / Raspberry Pi)
+
+A sensor in each corner of the maze — a big arcade button, a pressure mat, a break-beam or a motion
+sensor — can trigger **POWER MODE** by itself when a kid reaches it. A small Wi-Fi board (an ESP32 or a
+Raspberry Pi) in the corner sends the same request as the Stream Deck's POWER UP key:
+
+```
+POST http://<mac-address>:3000/api/game/power-up?source=corner-ne
+```
+
+No internet is needed: a small Wi-Fi router at the event connects the Mac, the staff tablets and the
+sensors. `source` is optional and names the corner, so the leaderboard's Terminal shows which one
+fired (`↳ power-up from corner-ne`). A trigger when no run is in progress is safely ignored.
+
+The full guide for whoever builds them — network setup, parts, wiring, a one-line test, and
+ready-to-edit code for an ESP32 (Arduino IDE) and a Raspberry Pi (Python) — is in
+[`hardware/README.md`](hardware/README.md).
 
 ## Kid safety & privacy
 
