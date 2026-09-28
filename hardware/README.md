@@ -15,26 +15,39 @@ Nothing here needs the internet. Everything talks over a small local Wi-Fi netwo
 
 ---
 
-## 1. The network: a Wi-Fi router, no internet
+## 1. The event network
 
-The leaderboard already speaks plain web requests (HTTP) over a network — that's how the staff
-tablets and the Stream Deck reach it. So the simplest reliable setup is a **local Wi-Fi network that
-isn't connected to the internet**:
+The attraction brings its own Wi-Fi: a **GL.iNet Opal travel router (GL-SFT1200)**, with no internet
+connected. Everything joins it:
 
-- Get any small Wi-Fi router. A travel router (GL.iNet and similar, ~$25–40) is ideal: pocket-sized,
-  powered over USB, and it works fine with nothing plugged into its internet port.
-- Join the **Mac mini**, the **staff tablets** and every **sensor board** to that network.
-- In the router's settings, give the Mac mini a **fixed address** (called a *DHCP reservation* or
-  *static lease*), e.g. `192.168.8.10`. Then the sensors always know where to send their request,
-  even after the Mac restarts.
+```
+                 ┌─ Mac mini (leaderboard) ── Ethernet cable into a LAN port, fixed at 192.168.8.10
+ GL.iNet Opal ───┼─ staff tablets / phones ── Wi-Fi
+ (no internet)   └─ sensor boards (ESP32/Pi) ─ Wi-Fi, 2.4 GHz
+```
 
-When the leaderboard starts it prints its address on this network:
+| | |
+| --- | --- |
+| **Wi-Fi name** | `PacManMaze` |
+| **Wi-Fi password** | not written here — this repository is public. Ask the event lead; it's on the label taped to the router. |
+| **Band for sensors** | 2.4 GHz (ESP32 boards can't use 5 GHz; the Opal broadcasts both) |
+| **Leaderboard address** | `http://192.168.8.10:3000` — the Mac mini's reserved address on the router |
+| **Router's own settings page** | `http://192.168.8.1` (works with no internet) |
+
+So a sensor board just needs to **join `PacManMaze`** and send its request to
+`http://192.168.8.10:3000/api/game/power-up` — that address goes into the sensor code below.
+
+The Mac mini is plugged into the router with a cable rather than Wi-Fi: it's the one thing that must
+never drop out. Its address is reserved in the router (a *DHCP reservation*), so it's the same every
+time the Mac restarts. When the leaderboard starts, it prints that address:
 
 ```
   On this Wi-Fi:   http://192.168.8.10:3000/admin
 ```
 
-The part before `/admin` — `http://192.168.8.10:3000` — is what goes into the sensor code below.
+> **Status:** the router is on order. Until it's set up, the name and addresses above are the plan;
+> this section will be confirmed once it's configured. For building and testing a sensor before then,
+> any home Wi-Fi works — use whatever address the leaderboard prints at startup.
 
 **macOS firewall:** if it's on (System Settings → Network → Firewall), the first time a device on the
 network connects macOS may ask whether `node` may accept incoming connections — click **Allow**.

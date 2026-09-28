@@ -360,9 +360,14 @@ Raspberry Pi) in the corner sends the same request as the Stream Deck's POWER UP
 POST http://<mac-address>:3000/api/game/power-up?source=corner-ne
 ```
 
-No internet is needed: a small Wi-Fi router at the event connects the Mac, the staff tablets and the
-sensors. `source` is optional and names the corner, so the leaderboard's Terminal shows which one
-fired (`↳ power-up from corner-ne`). A trigger when no run is in progress is safely ignored.
+No internet is needed. The attraction brings its own Wi-Fi network, **`PacManMaze`**, from a GL.iNet
+Opal travel router: the Mac mini is cabled into it at the fixed address `192.168.8.10`, and staff
+tablets and sensor boards join over Wi-Fi. So a sensor joins `PacManMaze` and sends
+`POST http://192.168.8.10:3000/api/game/power-up`. (The Wi-Fi password isn't in this public repo; it's
+on the router.)
+
+`source` is optional and names the corner, so the leaderboard's Terminal shows which one fired
+(`↳ power-up from corner-ne`). A trigger when no run is in progress is safely ignored.
 
 The full guide for whoever builds them — network setup, parts, wiring, a one-line test, and
 ready-to-edit code for an ESP32 (Arduino IDE) and a Raspberry Pi (Python) — is in
