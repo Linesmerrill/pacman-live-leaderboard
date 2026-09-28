@@ -29,7 +29,7 @@ connected. Everything joins it:
 | | |
 | --- | --- |
 | **Wi-Fi name** | `PacManMaze` |
-| **Wi-Fi password** | `wakawaka` (the sample the examples use — if the router was set up with a different one, it's on the label taped to the router) |
+| **Wi-Fi password** | `wakawaka` (what the router is set to, and what the examples use) |
 | **Band for sensors** | 2.4 GHz (ESP32 boards can't use 5 GHz; the Opal broadcasts both) |
 | **Leaderboard address** | `http://192.168.8.10:3000` — the Mac mini's reserved address on the router |
 | **Router's own settings page** | `http://192.168.8.1` (works with no internet) |
@@ -45,9 +45,10 @@ time the Mac restarts. When the leaderboard starts, it prints that address:
   On this Wi-Fi:   http://192.168.8.10:3000/admin
 ```
 
-> **Status:** the router is on order. Until it's set up, the name and addresses above are the plan;
-> this section will be confirmed once it's configured. For building and testing a sensor before then,
-> any home Wi-Fi works — use whatever address the leaderboard prints at startup.
+> **Router settings, for reference:** both Wi-Fi bands (2.4 and 5 GHz) are named `PacManMaze` with
+> the password `wakawaka`, and the Mac mini's Ethernet port (MAC `9C:76:0E:75:E8:FF`) is reserved at
+> `192.168.8.10` under **Network → LAN** on the router's settings page. The WAN port stays empty.
+> If the Mac shows a different address after a change, unplug its cable for a few seconds to renew.
 
 **macOS firewall:** if it's on (System Settings → Network → Firewall), the first time a device on the
 network connects macOS may ask whether `node` may accept incoming connections — click **Allow**.
