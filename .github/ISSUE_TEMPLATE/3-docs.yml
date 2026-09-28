@@ -1,0 +1,23 @@
+name: Docs
+description: A guide is wrong, missing something, or confusing.
+title: "[Docs] "
+labels: ["documentation"]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Which page?
+      description: A link to the guide or the section.
+      placeholder: https://github.com/Linesmerrill/pacman-live-leaderboard/blob/main/docs/sensors.md
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's wrong or missing?
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: What should it say?

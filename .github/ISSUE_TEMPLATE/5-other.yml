@@ -1,0 +1,11 @@
+name: Question or other
+description: Anything that doesn't fit the other templates.
+title: "[Question] "
+labels: ["question"]
+body:
+  - type: textarea
+    id: details
+    attributes:
+      label: What's on your mind?
+    validations:
+      required: true

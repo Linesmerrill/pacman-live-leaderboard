@@ -1,7 +1,7 @@
 // Pac-Man Maze — power-up sensor for an ESP32 (Arduino IDE).
 //
 // When a sensor in a maze corner fires, this sends one request to the leaderboard and the game goes
-// into POWER MODE. See hardware/README.md for the network setup and wiring.
+// into POWER MODE. See docs/sensors.md for the network setup and wiring.
 //
 // Boards: any ESP32 dev board ("ESP32 Dev Module" in Tools → Board).
 // Sensors: buttons, pressure mats, break-beams, or PIR motion sensors — one per GPIO pin below.

@@ -1,0 +1,36 @@
+name: Hardware
+description: The Stream Deck, the event router, or the power-up sensors.
+title: "[Hardware] "
+labels: ["hardware"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For a problem with the hardware or its setup, or an idea for new hardware.
+        Give the title a short summary after `[Hardware]`, e.g. `[Hardware] ESP32 won't join PacManMaze`.
+  - type: dropdown
+    id: device
+    attributes:
+      label: Which hardware?
+      options:
+        - Stream Deck
+        - Event router / Wi-Fi
+        - ESP32 sensor
+        - Raspberry Pi sensor
+        - TV or audio output
+        - Something else
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      description: The exact board, deck or router model.
+      placeholder: ESP32-WROOM-32 DevKit V1
+  - type: textarea
+    id: details
+    attributes:
+      label: What's happening, or what's the idea?
+      description: Include wiring, which pins, and any output from the Serial Monitor or the leaderboard's Terminal.
+    validations:
+      required: true

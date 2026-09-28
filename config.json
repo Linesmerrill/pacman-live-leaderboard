@@ -1,5 +1,5 @@
 {
-  "_help": "Edit and restart the app to apply. Every key is optional. See README.md > Configuration.",
+  "_help": "Edit and restart the app to apply. Every key is optional. See docs/settings.md.",
   "port": 3000,
   "host": "0.0.0.0",
   "databaseFile": "data/pacman-maze.db",

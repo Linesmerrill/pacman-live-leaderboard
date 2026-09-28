@@ -1,0 +1,50 @@
+name: Feature request
+description: Suggest something new, or a change to how something works.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Give the title a short summary after `[Feature]`, e.g.
+        `[Feature] Show the round clock on the Stream Deck's status key`.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part is it about?
+      options:
+        - TV leaderboard
+        - Staff screens
+        - Scoring or prize rounds
+        - Rules panel
+        - Sound or music
+        - Stream Deck
+        - Power-up sensors
+        - Setup and running the event
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would it solve?
+      description: What happens at the event today that this would make better?
+      placeholder: When a round ends, staff at the Stream Deck can't see how long is left without looking at the TV…
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Other ways you've thought of
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Helping out
+      options:
+        - label: I'd like to work on this myself

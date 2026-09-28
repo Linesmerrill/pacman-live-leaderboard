@@ -2,7 +2,7 @@
 """Pac-Man Maze — power-up sensor for a Raspberry Pi.
 
 When a sensor in a maze corner fires, this sends one request to the leaderboard and the game goes
-into POWER MODE. See hardware/README.md for the network setup and wiring.
+into POWER MODE. See docs/sensors.md for the network setup and wiring.
 
     python3 pi-power-up.py           watch the sensors
     python3 pi-power-up.py --once    send one power-up now, to test the network

@@ -282,7 +282,7 @@ describe('HTTP API', () => {
   });
 
   test('a power-up sensor can name its corner, and is ignored between runs', async () => {
-    // What an ESP32 or Raspberry Pi in a maze corner sends (see hardware/README.md).
+    // What an ESP32 or Raspberry Pi in a maze corner sends (see docs/sensors.md).
     await h.call('POST', '/api/game/reset');
     const idle = await h.call('POST', '/api/game/power-up?source=corner-ne');
     assert.equal(idle.status, 200, 'a trigger between runs must never error');

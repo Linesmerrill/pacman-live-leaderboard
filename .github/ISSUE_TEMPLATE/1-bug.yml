@@ -1,0 +1,76 @@
+name: Bug report
+description: Something doesn't work the way the guides say.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Give the title a short, specific summary after `[Bug]`, e.g.
+        `[Bug] Staff entry accepts scores on port 8080 when the port is set to 3000`.
+        Please don't include real kids' initials or photos from the event.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where is the problem?
+      options:
+        - TV leaderboard
+        - Staff entry (/admin) or + ADD PLAYER
+        - Manage scores / settings
+        - Prize rounds
+        - Rules panel
+        - Sound or music
+        - Stream Deck
+        - Power-up sensors (ESP32 / Raspberry Pi)
+        - Event network / router
+        - Setup, install or auto-start
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you saw, including any error message on screen or in the Terminal.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Start the app with `npm start`
+        2. Open http://localhost:3000/admin
+        3. Add a player with …
+        4. See …
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Terminal output
+      description: Anything the leaderboard's Terminal window printed around the time it happened.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Run `git log --oneline -1` in the project folder and paste the result.
+      placeholder: 852e439 Refresh the README screenshots…
+  - type: input
+    id: setup
+    attributes:
+      label: Setup
+      description: Mac model and macOS version, browser, Node version (`node -v`), and the Stream Deck model if it's involved.
+      placeholder: Mac mini M4, macOS 27, Chrome 141, Node 26.1, Stream Deck MK.2
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag images in here if they help.

@@ -30,7 +30,7 @@ export interface AppConfig {
   soundEnabled: boolean;
   /** Initial TV volume (0–100) for a brand-new database. Stream Deck VOL +/− changes it live. */
   soundVolume: number;
-  /** Folder holding your own event sounds (see assets/audio/README.md). */
+  /** Folder holding your own event sounds (see docs/music-and-sound.md). */
   audioDirectory: string;
   /** How often the eating-a-dot sound repeats while a run is playing, in milliseconds. */
   wakaIntervalMs: number;

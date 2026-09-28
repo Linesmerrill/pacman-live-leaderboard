@@ -1,541 +1,71 @@
 # ᗧ • • • Pac-Man Maze — Live Leaderboard
 
-A retro arcade scoreboard for the Pac-Man Maze Halloween attraction. It runs entirely on one Mac mini
-connected to a TV — no internet, no accounts, no cloud.
+A retro arcade scoreboard and show controller for the Pac-Man Maze Halloween attraction. It runs
+entirely on one Mac mini connected to a TV: no internet, no accounts, no cloud.
 
 Kids run the maze collecting fruit bean bags and, in power mode, tagging ghosts. At the exit, staff
-tap in the fruit they brought back and how many ghosts they tagged (the app adds up the score), the child picks 3-character initials (`MAX`, `J07`, …), staff type them in, and the TV
-updates instantly — jumping straight to that kid's spot on the board so they can grab a photo.
+tap in what they brought back (the app adds up the score), the kid picks 3-character initials, and
+the TV jumps straight to their spot on the board for a photo. Every 15 minutes the top 3 win candy
+and the board starts fresh.
 
 ![The TV: the leaderboard on the left (top 10 pinned, ranks 11–20 paging, the prize round clock in the subtitle) and the how-to-play rules on the right](docs/screenshots/tv-board.png)
 
-| Screen | Address | Who uses it |
-| --- | --- | --- |
-| **TV leaderboard** (with built-in **+ ADD PLAYER** entry) | `http://localhost:3000/` | Everyone / staff at the Mac |
-| Staff entry (tablet- or laptop-friendly) | `http://localhost:3000/admin` | Staff on a second device |
-| Manage scores | `http://localhost:3000/admin/settings` | Staff: edit, delete, export, reset |
+## What it does
 
-An optional **Stream Deck** runs the show itself — READY, 3·2·1, POWER UP, FINISH — driving the
-sounds and the TV from one set of physical keys. See [Running the show with a Stream Deck](#running-the-show-with-a-stream-deck).
+- **A live TV leaderboard**: the top 10 pinned, everyone else paging past, a spotlight on each new
+  player, and a full-screen celebration for a new high score.
+- **How to play, beside the board**: nine animated rules for the kids waiting in line.
+- **Scoring made easy**: staff tap the fruit and ghosts; the app does the maths.
+- **Prize rounds**: the top players win candy every 15 minutes, then the board clears itself.
+- **Run the show from a Stream Deck**: READY, 3·2·1, POWER UP, FINISH, music and volume on physical
+  keys, with the sounds and the TV following along.
+- **Power-up sensors**: optional ESP32 or Raspberry Pi boards in the maze corners trigger POWER MODE on
+  their own.
+- **Built for the night**: works offline, saves every score the moment it's added, blocks rude
+  initials, and forgives double-taps.
 
----
+## Quick start
 
-## Mac mini setup
-
-### 1. Install dependencies (one time, needs internet)
-
-1. Install **Google Chrome** (for full-screen kiosk mode): <https://www.google.com/chrome/>
-2. Install **Node.js 22.18 or newer**. The easiest way is [Homebrew](https://brew.sh):
-   ```bash
-   brew install node
-   ```
-3. Get the project into a simple folder such as `~/pacman-maze` (avoid Desktop/Documents/Downloads
-   if you plan to use auto-start — see below). In Terminal:
-   ```bash
-   git clone https://github.com/Linesmerrill/pacman-live-leaderboard.git ~/pacman-maze
-   cd ~/pacman-maze
-   npm install
-   ```
-   The app itself has **zero runtime packages** — it uses Node's built-in web server and SQLite.
-   `npm install` only adds the TypeScript checker used by `npm run typecheck`, so you can skip it on
-   a Mac that will only run the event.
-
-### 2. Start the application
+On a Mac with [Node.js 22.18+](https://nodejs.org) and Google Chrome:
 
 ```bash
+git clone https://github.com/Linesmerrill/pacman-live-leaderboard.git ~/pacman-maze
 cd ~/pacman-maze
 npm start
 ```
 
-You'll see the addresses to open, e.g.:
+Then open the screens:
 
-```
-  TV leaderboard:  http://localhost:3000/
-  Staff entry:     http://localhost:3000/admin
-  Manage scores:   http://localhost:3000/admin/settings
-  On this Wi-Fi:   http://192.168.1.20:3000/admin
-```
-
-Leave that Terminal window open. Stop the app with **Ctrl+C** (scores are already saved).
-
-### 3. Open the staff screen
-
-**Fastest: right on the TV.** With a keyboard and mouse plugged into the Mac mini:
-
-- Click **+ ADD PLAYER** at the bottom of the leaderboard, **or just start typing the initials** —
-  the entry panel pops open with the first letter already filled in.
-- Type 3 letters/numbers → tap each fruit they brought back and set the ghosts tagged → the score fills itself in (or type it, or use the big − / +).
-- Press **Enter** (or click **ADD TO LEADERBOARD**). The panel closes and the board shows the player.
-- **Esc** closes the panel. The panel has **Undo** for the last player you added, and a
-  **Manage scores** link.
-
-![The + ADD PLAYER panel on the TV: initials, the fruit and ghosts tapped in, and the score added up](docs/screenshots/tv-add-player.png)
-
-**From a tablet or laptop** on the same Wi-Fi, open the “On this Wi-Fi” address printed at startup
-(e.g. `http://192.168.1.20:3000/admin`). It has the same entry form plus a list of recent entries with
-**Show on TV**, **Edit** and **Delete** buttons.
-
-![Staff score entry at /admin: the fruit-and-ghost calculator, the prize round clock and last round's winners with candy tick boxes](docs/screenshots/staff-entry.png)
-
-### 4. Open the leaderboard screen
-
-On the Mac mini, open Chrome to **`http://localhost:3000/`**.
-
-### 5. Put the leaderboard in full-screen mode
-
-Pick one:
-
-- **Kiosk mode (recommended):** in a second Terminal window run
-  ```bash
-  npm run kiosk
-  ```
-  Chrome opens the board full-screen with no toolbars, using its own clean profile, and keeps the Mac
-  from sleeping. Quit kiosk mode with **Cmd+Q**.
-- **Normal Chrome:** press **Ctrl+Cmd+F** (View → Enter Full Screen), or **double-click** the board.
-
-The mouse pointer hides itself after 3 seconds; move the mouse to bring it back.
-
-### 6. Backup, export, and reset scores
-
-Scores are written to SQLite on every submission (`data/pacman-maze.db`). They survive browser
-refreshes, closed tabs, app restarts and Mac restarts.
-
-| Task | How |
-| --- | --- |
-| **Export to spreadsheet** | Manage scores → **Download CSV** (rank, player, score, completion_time_seconds, submitted_at) |
-| **Backup** | Manage scores → **Save backup now**, or in Terminal: `npm run backup`. Files go to `backups/`. Safe while the app is running. |
-| **Reset for a new night** | Manage scores → **Clear leaderboard…** → type `RESET`. A backup is saved automatically first (`backups/pacman-maze-before-reset-….db`). |
-| **Restore a backup** | Stop the app (Ctrl+C), copy the backup over `data/pacman-maze.db` (delete any `data/pacman-maze.db-wal` / `-shm` files), then `npm start`. |
-| **Fix one score** | **Edit** / **Delete** in Manage scores or in the /admin recent list. |
-
-For an off-site copy, drag the `backups/` folder (or the whole `data/` folder while the app is stopped)
-to a USB stick.
-
-![Manage scores at /admin/settings: every score with Show on TV, Edit and Delete, beside the settings cards (timer, run timer, scoring, prize rounds, how to play, music…)](docs/screenshots/manage-scores.png)
-
----
-
-## How the TV board works
-
-| Spotlight — the TV jumps to each new player | NEW HIGH SCORE! celebration |
-| --- | --- |
-| ![XAN is 19th of 46, highlighted in the paging column](docs/screenshots/tv-spotlight.png) | ![NEW HIGH SCORE overlay with Pac-Man chasing frightened ghosts](docs/screenshots/tv-new-high-score.png) |
-
-- **Top 10 always pinned** on the left, with 1st–3rd in gold/silver/bronze with fruit bonuses. Tied
-  scores share a rank (1st, 1st, 3rd).
-- **Everyone else** fills the column beside it (ranks 11–20). With more players, Pac-Man **eats the
-  page** every 10 seconds to flip to 21–30, 31–40, and so on — with a page indicator.
-- **Spotlight:** when a score is added the TV jumps to that player's page, highlights their row, and
-  shows a banner like **`★ SAM IS 20TH OF 57! ★`**. It holds for 20 seconds — photo time. Missed it?
-  Press **Show on TV** next to any score on the staff screens to bring it back.
-- **NEW HIGH SCORE!** — beating the #1 score outright plays a full-screen celebration (Pac-Man chasing
-  frightened ghosts), then spotlights the new leader. Tying #1 doesn't trigger it; the first score of the
-  night does.
-- The footer shows the **last run** and total **players**. A small “RECONNECTING…” note appears only if
-  the TV loses the server for more than 5 seconds; it reconnects by itself.
-- The **how-to-play rules** take the right-hand side of the screen (40% by default — see
-  [How to play](#how-to-play-beside-the-leaderboard)). The leaderboard fits whatever space is left: two
-  columns at any rules width, three if the rules are switched off. Text auto-sizes to fit.
-
-## Run timer
-
-A maze session has a time limit, set in **Manage scores → Run timer** (20 seconds by default).
-START arms the clock and the TV counts it down; when it reaches zero the run **finishes by itself** —
-same as pressing FINISH.
-
-**Power pellets buy time.** Grabbing one adds `Power pellet (seconds)` to the clock that's already
-running, so a pellet taken with 1 second left doesn't restart the run, it extends it:
-
-```
-20s run, pellet grabbed at 0:19
-   └─ clock becomes 0:25, power mode runs 0:19 → 0:24
-      then normal play resumes for a second and the run finishes at 0:25
-```
-
-**Pellets stop paying out.** `Pellets that add time` (1 by default) caps how many pellets extend one
-session — so with the defaults, a session is 20 seconds and never more than 25, and nobody can loop
-the maze while others queue. Beyond the cap, pellets still fire
-the sound, the blue ghosts and the flashing walls for everyone — they just don't add time.
-
-One clock covers **everyone in the maze at once**, which is what you want when you run several kids
-together: any pellet is live for the whole group. Set the run length to `0` for no limit.
-
-## Sound effects
-
-The TV plays original arcade-style blips — square-wave jingles generated in the browser, so there are
-no audio files to manage and nothing to download:
-
-| When | Sound |
-| --- | --- |
-| A run lands below the top 10 | Short two-note blip |
-| A run makes the pinned top 10 | Rising three-note blip |
-| 1st, 2nd or 3rd place | Podium arpeggio with a bass note |
-| **New high score** (#1 beaten outright) | Full fanfare, timed to the celebration overlay |
-| The board jumps to a player (including **Show on TV**) | Sparkle, plus a Pac-Man chomp on the page flip |
-| Opening the entry panel | Soft blip |
-
-Idle page flips are deliberately silent, so the room only hears something when a kid actually scores.
-
-### Using your own sounds
-
-Drop sound files into [`assets/audio/`](assets/audio/README.md) and the TV plays them instead of the
-built-in blips. The file name is the cue name:
-
-| File | Plays when |
-| --- | --- |
-| `go.wav` | **Game start** — the run begins (after the countdown, or on START) |
-| `power-up.wav` | **Power pellet** — POWER UP pressed |
-| `pac-dot.wav` | **Eating a dot** — and repeated over and over for the whole run |
-| `pac-dot-2.wav` | Optional second chomp; the run alternates the two, like the arcade |
-| `finish.wav` | **Game over** — FINISH pressed, or the run timer running out |
-| `intermission.wav` | Between runs — RESET pressed |
-
-`intro`, `countdown`, `power-end`, `ghost-tag`, `fruit`, `high-score` and `stop` work the same way, and
-`gameplay-loop` / `power-loop` replace the background music with a continuous track. `.wav`, `.mp3`,
-`.ogg`, `.m4a` and `.aac` all work. Anything you don't supply keeps its built-in sound, so the show
-always has audio. A `power-loop` file plays continuously through POWER MODE, and a `gameplay-loop`
-file replaces the repeating dot sound for the whole run.
-
-Restart the app after adding files (the folder is read at startup) and check what it picked up at
-<http://localhost:3000/api/audio>. The repeat rate of the dot sound is `wakaIntervalMs` in
-`config.json` (150 ms by default) — keep that file short so it doesn't overlap itself.
-
-**These are your files.** Pac-Man's audio belongs to Bandai Namco, so use recordings you have the
-right to use. The folder is git-ignored, so your sounds stay on the event Mac and this public
-repository never redistributes them.
-
-### Prize rounds: candy for the top players
-
-![ROUND 5 WINNERS! with the top three, candy, and SEE STAFF FOR YOUR CANDY!](docs/screenshots/tv-round-winners.png)
-
-The board runs in short rounds rather than all night, so kids who are still around can actually
-win. With the defaults, **every 15 minutes the top 3 win candy** and the board starts fresh:
-
-- A round's clock starts with its **first score**, so setup time and quiet spells never use one up.
-  The TV's subtitle becomes the clock: `ROUND 2 - 12:34 - TOP 3 WIN`.
-- When it runs out, the app ends the round on its own: everyone ranked in the prize places wins
-  (**ties included** — two kids tied for 3rd both win), the TV shows **ROUND 2 WINNERS!** with the
-  fanfare and "see staff for your candy", the board is **backed up and cleared**, and the next round
-  starts with the next score. Nobody has to press anything, and a kid who scores while candy is being
-  handed out simply lands in the new round.
-- The winners stay on the empty TV board, and on the staff entry screen with a tick box each, so you
-  can check kids off as they collect.
-- **Manage scores → Prize rounds** has the switch, the round length and how many places win, plus
-  **End round now** and **Restart the clock** (handy for lining rounds up with the hour). A restart of
-  the Mac doesn't lose a round: it picks up where it was, or ends at once if it ran out meanwhile.
-
-The TV's rules gain a **WIN CANDY!** step while rounds are on. Only initials and scores are kept for
-winners, the same as the board itself.
-
-### Scoring: fruit and ghosts
-
-Each fruit bean bag is worth points, and so is each ghost tagged in power mode. Staff never add it
-up: on the entry screen (and the TV's **+ ADD PLAYER**) they tap a fruit tile for every bean bag the
-kid brought back — tap twice for two strawberries, **−** to take one off — and set **Ghosts tagged**.
-The score fills itself in, with the working shown (`2× Strawberry 60 + Orange 50 + 2× Ghosts 60 = 170`),
-and can still be typed or nudged by hand. Only the total is saved.
-
-**Manage scores → Scoring** sets what everything is worth and which fruit are in the maze. The
-defaults are the arcade's values ÷ 10, with the first five fruit switched on:
-
-| Cherry | Strawberry | Orange | Apple | Melon | Galaxian | Bell | Key |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 10 | 30 | 50 | 70 | 100 | 200 *(off)* | 300 *(off)* | 500 *(off)* |
-
-Ghosts double like the arcade — **20, 40, 80, 160** for the 1st to 4th ghost, the last value repeating
-after that — so two ghosts are worth 60. The TV's rules show these same values.
-
-### How to play, beside the leaderboard
-
-<img src="docs/screenshots/tv-rules.png" alt="The nine rules, each caught mid-animation" width="560">
-
-The TV splits in two: the leaderboard on the left, and on the right the rules for the kids waiting
-in line, one at a time — **enter the maze, avoid the ghosts, collect the fruit, activate the power orb,
-tag the ghosts in power mode, two kids per game from opposite sides, beat the clock, and
-tell staff your initials at game over** — each with a little looping animation of that moment. The power
-orb's time is quoted from your settings, so the rules stay honest if you change them.
-
-**Manage scores → How to play** has the switch, a **width slider** (25–65% of the screen; the TV
-resizes as you drag, so set it by eye on the night) and how long each rule stays up. The leaderboard
-keeps paging through every rank at any width. NEW HIGH SCORE, the 3·2·1 countdown and FINISH still
-take over the whole screen.
-
-### Background music between runs
-
-A soft, original chiptune bed plays on the TV whenever a run *isn't* under way — idle board, READY,
-and after a FINISH. It ducks under every sound effect and stops completely once a run starts, so it
-never fights the waka. It has its own switch and volume slider in **Manage scores → Background
-music** (on at 35% by default), separate from the TV volume.
-
-It isn't one short loop on repeat: there are **eight written-out songs of about a minute each** —
-nearly nine minutes before anything comes round again. Each is composed like a real song, with an
-intro, verses, a chorus that lifts above the verse, a bridge and an outro that resolves home, in
-NES-style voicing: a pulse-wave lead over a triangle bass. They're stored as notes in
-[`music.js`](apps/leaderboard/public/js/music.js) rather than as audio, so they cost nothing to ship,
-and the tests check they stay tuneful (mostly stepwise melodies, every piece ending on its key note).
-Skip back and forward with the deck's **PREV** and **NEXT** keys; the TV flashes the track name.
-Supplying a `gameplay-loop` file doesn't affect them.
-
-**Your own songs:** drop MP3s (or `.m4a`, `.ogg`, `.wav`) into `assets/audio/music/` and restart, and they
-replace the built-in album — shuffled, back to back, still skippable with PREV and NEXT, with the TV
-showing each song's name. Songs play at their recorded level, about as loud as the built-in pieces; the
-**Background music** slider sets how far under the room they sit. Details in [`assets/audio/README.md`](assets/audio/README.md).
-
-**Turning it off:** the speaker button next to **+ ADD PLAYER** on the TV, or **Manage scores → Sound
-effects**. The setting is saved on the server, so every screen agrees and it survives a restart. Set
-`soundEnabled` in `config.json` to change the starting value for a brand-new database.
-
-**Volume** is the TV's own volume (the Mac must be outputting audio over HDMI). Browsers block audio
-until someone interacts with the page; `npm run kiosk` launches Chrome with audio allowed from the
-start, and otherwise the first click or keypress on the board unlocks it.
-
-## Completion timer (optional)
-
-Off by default. Turn it on in **Manage scores → Completion timer**. When on:
-
-- Staff see a **Completion time (seconds)** box (leave blank if a run wasn't timed).
-- Ranking is still **highest score first**; equal scores are broken by the **fastest time**; untimed
-  runs rank after timed runs with the same score.
-- The TV adds a **TIME** column.
-
-When off, times are ignored; equal scores share a rank and list earliest-submission first.
-
-## Running the show with a Stream Deck
-
-![The 15 keys of a Stream Deck MK.2 running the attraction](docs/screenshots/streamdeck-layout.png)
-
-The optional controller in [`apps/streamdeck`](apps/streamdeck) turns an Elgato Stream Deck into the
-attraction's control panel. Each key posts one command to the leaderboard app, which owns the game
-state — so the operator presses **one** button and the software does the rest:
-
-```
-POWER UP pressed
-   ├─ power-up sting, gameplay music swaps to power-mode music
-   ├─ TV: ghosts turn blue, maze walls flash, POWER MODE counts down
-   └─ 5 seconds later (the power-pellet time), all by itself:
-        power-down sound → normal music resumes → state back to PLAYING
-```
-
-Same for **3·2·1**: the countdown appears on the TV and the run starts on its own, so nobody has to
-press three buttons in the right order.
-
-| Command | What it does |
-| --- | --- |
-| `ready` | Intro sound, TV shows `READY!` |
-| `countdown` | 3·2·1 on the TV, then starts the run automatically |
-| `start` | Starts the run, its clock, and the gameplay music |
-| `power-up` | Power mode, and adds time to the run (see Run timer below) |
-| `ghost-tag`, `fruit`, `pac-dot` | One-shot sounds during a run |
-| `high-score` | Plays the high-score fanfare on demand |
-| `spotlight` | Puts the player who just scored on the TV and holds their page for a photo |
-| `finish` | Ends the run: music stops, `FINISH!` on the TV |
-| `stop-all` | Silences everything without changing the state |
-| `reset` | Back to the idle leaderboard |
-| `volume-up`, `volume-down`, `mute` | TV volume and mute |
-| `music-prev`, `music-next` | Skip the background music back or forward a track |
-
-The keys also show what's happening: POWER UP counts down on the key itself, the live step lights up,
-commands that don't apply are dimmed, and every key says `(offline)` if the leaderboard isn't running.
-
-**Setup** (needs the Stream Deck app 7.1 or newer — `brew install --cask elgato-stream-deck`):
-
-```bash
-npm run streamdeck:build
-npm run streamdeck:install
-npm run streamdeck:profile   # optional: lays out all 15 keys in one go
-```
-
-`streamdeck:profile` builds a profile for the deck plugged into this Mac; double-click it and confirm
-the import. Otherwise open the **Pac-Man Maze** category in the actions list and drag the keys over
-one at a time — each one is its own action, so there is nothing to configure. Full details, including
-how to point the keys at another Mac, are in [`apps/streamdeck/README.md`](apps/streamdeck/README.md).
-
-**No Stream Deck?** The same commands work from anything that can send a local HTTP request:
-
-```bash
-curl -X POST http://localhost:3000/api/game/power-up
-```
-
-## Power-up sensors in the maze (Arduino / Raspberry Pi)
-
-A sensor in each corner of the maze — a big arcade button, a pressure mat, a break-beam or a motion
-sensor — can trigger **POWER MODE** by itself when a kid reaches it. A small Wi-Fi board (an ESP32 or a
-Raspberry Pi) in the corner sends the same request as the Stream Deck's POWER UP key:
-
-```
-POST http://<mac-address>:3000/api/game/power-up?source=corner-ne
-```
-
-No internet is needed. The attraction brings its own Wi-Fi network, **`PacManMaze`**, from a GL.iNet
-Opal travel router: the Mac mini is cabled into it at the fixed address `192.168.8.10`, and staff
-tablets and sensor boards join over Wi-Fi. So a sensor joins `PacManMaze` and sends
-`POST http://192.168.8.10:3000/api/game/power-up`. The sample Wi-Fi password is `wakawaka`.
-
-`source` is optional and names the corner, so the leaderboard's Terminal shows which one fired
-(`↳ power-up from corner-ne`). A trigger when no run is in progress is safely ignored.
-
-The full guide for whoever builds them — network setup, parts, wiring, a one-line test, and
-ready-to-edit code for an ESP32 (Arduino IDE) and a Raspberry Pi (Python) — is in
-[`hardware/README.md`](hardware/README.md).
-
-## Kid safety & privacy
-
-- Player codes must be **exactly 3 characters, A–Z or 0–9**; they're uppercased automatically.
-- A built-in **blocked-initials list** stops obviously inappropriate combos, including digit look-alikes
-  (`A55`, `4SS`). Add your own in **Manage scores → Blocked initials** (use `?` as a wildcard, e.g.
-  `B?T`). Existing scores that match a newly blocked code are flagged in red so staff can fix them.
-- Staff can edit or delete any entry immediately; the TV updates instantly.
-- The database stores **only** the 3-character code, the score, the optional time, and a timestamp.
-  No names, ages, emails, phone numbers or photos.
-- Optional **staff PIN** (`adminPin` in `config.json`) protects adding/editing/deleting if the Mac is on
-  shared Wi-Fi. The TV board stays open to view; staff are asked for the PIN once per device.
-
-## Mistake-proofing for staff
-
-- Big targets, Enter-to-advance, and a live “Ready: MAX with 120 points” summary before submitting.
-- Double-clicks and double-taps can't add a score twice (the button locks, and every submission carries
-  a one-time ID the server de-duplicates).
-- Same initials **and** same score within 60 seconds asks “Same player again?” — so a repeat tap is
-  caught, but two different kids called `MAX` are fine.
-- Clearing the board requires typing `RESET` and always makes a backup first.
-
----
-
-## Auto-start after a Mac restart (optional)
-
-```bash
-npm run autostart:install -- --kiosk
-```
-
-This adds two macOS login items for the current user: the leaderboard server (restarted automatically
-if it ever stops) and Chrome kiosk mode on the TV. Logs go to `logs/`. Remove them with
-`npm run autostart:remove`. Leave off `-- --kiosk` to auto-start only the server.
-
-For a fully hands-off restart, also set:
-
-- **System Settings → Users & Groups → Automatically log in as** this user.
-- **System Settings → Displays / Energy → Prevent automatic sleeping when the display is off**, and set
-  **Turn display off** to **Never** (kiosk mode also keeps the display awake while it runs).
-
-## Event-night checklist
-
-1. Plug in the Mac mini + TV, keyboard and mouse. Start the app (`npm start`) and the kiosk (`npm run kiosk`).
-2. Clear last night's scores if needed (Manage scores → Clear leaderboard → `RESET`).
-3. Add a test score, check the TV, then delete it.
-4. Turn off Mac notifications (Focus → Do Not Disturb) so nothing pops up on the TV.
-5. After the event: **Download CSV** and/or **Save backup now**.
-
----
-
-## Configuration
-
-Edit `config.json` and restart the app. Every key is optional.
-
-| Key | Default | Meaning |
+| Screen | Address | Who uses it |
 | --- | --- | --- |
-| `port` | `3000` | Web server port (env `PORT`) |
-| `host` | `"0.0.0.0"` | `"0.0.0.0"` allows tablets on the same Wi-Fi; `"127.0.0.1"` = this Mac only (env `HOST`) |
-| `databaseFile` | `"data/pacman-maze.db"` | SQLite file (env `DB_PATH`) |
-| `backupDirectory` | `"backups"` | Where backups are written (env `BACKUP_DIR`) |
-| `leaderboardSize` | `10` | Rows per TV column; the first column pins this many top players |
-| `boardColumns` | `3` | TV columns (1–4). Fewer are used automatically on narrower screens |
-| `pageSeconds` | `10` | Seconds between page flips of the lower ranks |
-| `spotlightSeconds` | `20` | How long a newly added player stays highlighted on screen |
-| `completionTimeEnabled` | `false` | Initial timer setting for a new database (then use the toggle in Manage scores) |
-| `soundEnabled` | `true` | Initial sound setting for a new database (then use the speaker button or Manage scores) |
-| `soundVolume` | `80` | Initial TV volume 0–100 (then use the Stream Deck's VOL +/− keys) |
-| `audioDirectory` | `"assets/audio"` | Folder holding your own sound files (env `AUDIO_DIR`) |
-| `wakaIntervalMs` | `200` | How often the eating-a-dot sound repeats during a run |
-| `countdownSeconds` | `3` | Length of the 3·2·1 countdown |
-| `runSeconds` | `20` | Starting run length; `0` = no limit (then use Manage scores → Run timer) |
-| `powerPelletSeconds` | `5` | Starting power-pellet time: power-mode length, and the time a pellet adds |
-| `maxPellets` | `1` | Starting cap on how many pellets add time to one run |
-| `idleMusicEnabled` · `idleMusicVolume` | `true` · `35` | Starting state of the background music between runs |
-| `rulesEnabled` · `rulesPercent` · `rulesStepSeconds` | `true` · `40` · `6` | The how-to-play rules beside the leaderboard: on/off, share of the screen width (25–65), seconds per rule |
-| `roundsEnabled` · `roundMinutes` · `prizeCount` | `true` · `15` · `3` | Prize rounds: on/off, minutes per round, how many places win |
-| `adminPin` | `""` | Staff PIN; empty = no PIN (env `ADMIN_PIN`) |
-| `maxScore` | `999` | Highest score accepted |
-| `maxTimeSeconds` | `3600` | Longest completion time accepted |
-| `duplicateWarningSeconds` | `60` | “Same player again?” window; `0` disables |
+| **TV leaderboard**, with a built-in **+ ADD PLAYER** entry panel | `http://localhost:3000/` | Everyone; staff at the Mac |
+| Staff entry, for a tablet or laptop | `http://localhost:3000/admin` | Staff on a second device |
+| Manage scores | `http://localhost:3000/admin/settings` | Staff: edit, delete, export, reset, settings |
 
-## Architecture
+`npm run kiosk` puts the board full-screen on the TV. The full setup, including auto-start after a
+restart, is in [Setting up the Mac](docs/setup-mac.md).
 
-- **Node.js + TypeScript**, run directly by Node's built-in TypeScript support — no build step.
-- **SQLite** via Node's built-in `node:sqlite` (WAL journal, `synchronous=FULL`) — no native modules to
-  compile, no external database. Schema: [`src/schema.sql`](src/schema.sql).
-- **Server-Sent Events** (`/api/stream`) push every change to all screens; browsers reconnect
-  automatically, and a 20-second poll is a safety net.
-- **Frontend:** plain HTML/CSS/JS modules — no framework, no CDN, no web fonts. The arcade lettering is
-  an original 5×7 pixel font drawn as SVG; ghosts, fruit and Pac-Man are original SVGs; the sound
-  effects are original Web Audio jingles — with no files needed, though your own recordings in
-  `assets/audio` take over when present.
+## Guides
 
-```
-apps/leaderboard/            the app that runs the event
-  src/
-    server.ts       starts everything, prints URLs, graceful shutdown
-    http.ts         routes, static files, staff PIN check
-    service.ts      business rules: submit / edit / delete / reset / backup / CSV
-    game.ts         game state machine + the timers behind the countdown and POWER MODE
-    audio.ts        finds and serves your own sound files from assets/audio
-    ranking.ts      pure ranking + tie-break rules
-    validation.ts   initials / score / time validation
-    denylist.ts     blocked-initials matching (look-alikes, wildcards)
-    store.ts        SQLite persistence
-    live.ts         Server-Sent Events hub
-  public/
-    index.html      TV leaderboard (+ built-in entry panel)
-    admin.html      staff entry     settings.html  manage scores
-    js/             leaderboard, entry form, paging, pixel font, sprites, sounds, live feed…
-  test/             ranking, validation, service, game, paging, sounds, HTTP API
-apps/streamdeck/             the optional hardware controller (has its own README)
-packages/shared/             the command + state contract that both apps import
-scripts/                     kiosk launcher, auto-start installer, backup
-docs/screenshots/            README images
-config.json · data/ · backups/   settings and event data, shared by both apps
-```
-
-### API (for the curious)
-
-| Method | Path | Notes |
-| --- | --- | --- |
-| GET | `/api/leaderboard` | Public snapshot: every run in rank order + display settings |
-| GET | `/api/stream` | Public live updates (SSE) |
-| POST | `/api/scores` | `{ initials, score, timeSeconds?, submissionId?, confirmDuplicate? }` |
-| GET | `/api/scores` | All scores for staff, with blocked-word flags |
-| PUT / DELETE | `/api/scores/:id` | Edit / delete |
-| POST | `/api/scores/:id/spotlight` | Show a player on the TV again |
-| POST | `/api/reset` | `{ "confirm": "RESET" }` — backs up, then clears |
-| POST | `/api/backup` · GET `/api/export.csv` | Backup file · CSV download |
-| GET / PUT | `/api/settings` | Completion timer, sound effects, custom blocked list |
-| GET | `/api/game` | Current game state (state, music loop, last cue, volume) |
-| GET | `/api/audio` | Which of your own sound files were found in `assets/audio` |
-| POST | `/api/game/:command` | Run a controller command — see the Stream Deck table above |
-
-Staff endpoints require the `X-Admin-Pin` header only when `adminPin` is set.
-
-## Tests
-
-```bash
-npm test          # leaderboard suites + the Stream Deck plugin driven by a simulated Stream Deck
-npm run check     # type-check both apps, then the tests
-```
-
-The Stream Deck tests run the real built plugin against a real leaderboard, with a stand-in for the
-Stream Deck app on a WebSocket — so key presses, key artwork and the offline behaviour are covered
-without plugging anything in.
-
-## Troubleshooting
-
-| Problem | Fix |
+| Guide | What's in it |
 | --- | --- |
-| “Port 3000 is already in use” | The app is already running (maybe via auto-start). Use it, or stop the other copy. |
-| TV shows “RECONNECTING…” | The server stopped. Restart it with `npm start`; the TV recovers on its own. |
-| Tablet can't open `/admin` | Same Wi-Fi as the Mac? Use the “On this Wi-Fi” address. Allow Node in macOS Firewall if asked. |
-| Chrome isn't full-screen | Use `npm run kiosk`, or Ctrl+Cmd+F. |
-| Initials rejected | They're on the blocked list, or aren't exactly 3 letters/numbers. Ask the kid for another combo. |
-| Stream Deck keys say “(offline)” | The leaderboard isn't running, or the key points at the wrong address. Start it with `npm start`, or set the address in the key's Connection section. |
-| Stream Deck shows no Pac-Man Maze actions | Re-run `npm run streamdeck:build && npm run streamdeck:install`, and check the Stream Deck app is version 7.1 or newer. |
-| The profile import does nothing | Stream Deck asks you to confirm the import in a dialog — click through it. If it still doesn't appear, drag the keys on by hand instead. |
-| My own sound files aren't playing | Restart the app (the folder is read at startup), then check <http://localhost:3000/api/audio>. File names must match the cue names exactly, e.g. `go.wav`, and reload the TV page afterwards. |
-| No sound on the TV | Check the speaker button next to + ADD PLAYER, the TV's own volume, and that the Mac is playing audio through the TV (System Settings → Sound → Output). Outside kiosk mode, click the board once to let the browser start audio. |
+| [Setting up the Mac](docs/setup-mac.md) | Installing, starting, full-screen on the TV, auto-start, updating |
+| [Running the event](docs/running-the-event.md) | The night's checklist, entering scores, handing out candy, fixing mistakes, backups |
+| [How it works](docs/how-it-works.md) | The TV board, the run clock and power pellets, scoring, prize rounds, the rules panel |
+| [Settings](docs/settings.md) | Every card in Manage scores, and every key in `config.json` |
+| [Stream Deck](docs/stream-deck.md) | Installing the plugin and the 15-key layout, what each key does |
+| [Event network](docs/network.md) | The `PacManMaze` Wi-Fi router, and setting it up from scratch |
+| [Power-up sensors](docs/sensors.md) | ESP32 / Raspberry Pi corner sensors: parts, wiring, code, testing |
+| [Music and sound](docs/music-and-sound.md) | Sound effects, your own recordings, the songs between runs, volume |
+| [Troubleshooting](docs/troubleshooting.md) | Something's wrong: find it here |
+| [Development](docs/development.md) | Architecture, the API, tests |
+
+## Contributing
+
+Found a bug or have an idea? [Open an issue](https://github.com/Linesmerrill/pacman-live-leaderboard/issues/new/choose).
+Want to change something yourself? See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE). Pac-Man is a trademark of Bandai Namco; this is an unofficial fan project for a local
+Halloween attraction.
