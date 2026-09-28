@@ -363,8 +363,7 @@ POST http://<mac-address>:3000/api/game/power-up?source=corner-ne
 No internet is needed. The attraction brings its own Wi-Fi network, **`PacManMaze`**, from a GL.iNet
 Opal travel router: the Mac mini is cabled into it at the fixed address `192.168.8.10`, and staff
 tablets and sensor boards join over Wi-Fi. So a sensor joins `PacManMaze` and sends
-`POST http://192.168.8.10:3000/api/game/power-up`. (The Wi-Fi password isn't in this public repo; it's
-on the router.)
+`POST http://192.168.8.10:3000/api/game/power-up`. The sample Wi-Fi password is `wakawaka`.
 
 `source` is optional and names the corner, so the leaderboard's Terminal shows which one fired
 (`↳ power-up from corner-ne`). A trigger when no run is in progress is safely ignored.

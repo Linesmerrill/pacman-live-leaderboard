@@ -29,7 +29,7 @@ connected. Everything joins it:
 | | |
 | --- | --- |
 | **Wi-Fi name** | `PacManMaze` |
-| **Wi-Fi password** | not written here — this repository is public. Ask the event lead; it's on the label taped to the router. |
+| **Wi-Fi password** | `wakawaka` (the sample the examples use — if the router was set up with a different one, it's on the label taped to the router) |
 | **Band for sensors** | 2.4 GHz (ESP32 boards can't use 5 GHz; the Opal broadcasts both) |
 | **Leaderboard address** | `http://192.168.8.10:3000` — the Mac mini's reserved address on the router |
 | **Router's own settings page** | `http://192.168.8.1` (works with no internet) |

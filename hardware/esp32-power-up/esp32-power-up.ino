@@ -12,7 +12,7 @@
 // ---------- Settings: edit these ----------
 
 const char* WIFI_NAME = "PacManMaze";        // the event router's Wi-Fi name (2.4 GHz)
-const char* WIFI_PASSWORD = "change-me";
+const char* WIFI_PASSWORD = "wakawaka";
 const char* LEADERBOARD = "http://192.168.8.10:3000";  // the Mac mini's address, no trailing slash
 const char* STAFF_PIN = "";                   // only if adminPin is set in config.json
 
