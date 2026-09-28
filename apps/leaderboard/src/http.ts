@@ -284,7 +284,10 @@ export function createApp({ service, publicDir = path.join(APP_ROOT, 'public'), 
       return sendJson(res, 200, { entry });
     }
     if (method === 'POST' && pathname === '/api/round/end') {
-      if (!service.roundStatus().enabled) throw new HttpError(409, 'rounds_off', 'Prize rounds are switched off.');
+      const round = service.roundStatus();
+      if (!round.enabled) throw new HttpError(409, 'rounds_off', 'Prize rounds are switched off.');
+      // A round only starts with its first score; ending one that hasn't would skip a round number.
+      if (round.endsAt === null) throw new HttpError(409, 'round_not_started', `Round ${round.number} hasn't started yet — it starts with its first score.`);
       finishRound('ended by staff');
       return sendJson(res, 200, { round: service.roundStatus() });
     }

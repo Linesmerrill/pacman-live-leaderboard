@@ -7,7 +7,7 @@ Kids run the maze collecting fruit bean bags and, in power mode, tagging ghosts.
 tap in the fruit they brought back and how many ghosts they tagged (the app adds up the score), the child picks 3-character initials (`MAX`, `J07`, …), staff type them in, and the TV
 updates instantly — jumping straight to that kid's spot on the board so they can grab a photo.
 
-![The TV leaderboard: top 10 pinned on the left, ranks 11–30 on the right, auto-paging through everyone else](docs/screenshots/tv-board.png)
+![The TV: the leaderboard on the left (top 10 pinned, ranks 11–20 paging, the prize round clock in the subtitle) and the how-to-play rules on the right](docs/screenshots/tv-board.png)
 
 | Screen | Address | Who uses it |
 | --- | --- | --- |
@@ -69,13 +69,13 @@ Leave that Terminal window open. Stop the app with **Ctrl+C** (scores are alread
 - **Esc** closes the panel. The panel has **Undo** for the last player you added, and a
   **Manage scores** link.
 
-![The + ADD PLAYER panel on the TV](docs/screenshots/tv-add-player.png)
+![The + ADD PLAYER panel on the TV: initials, the fruit and ghosts tapped in, and the score added up](docs/screenshots/tv-add-player.png)
 
 **From a tablet or laptop** on the same Wi-Fi, open the “On this Wi-Fi” address printed at startup
 (e.g. `http://192.168.1.20:3000/admin`). It has the same entry form plus a list of recent entries with
 **Show on TV**, **Edit** and **Delete** buttons.
 
-![Staff score entry at /admin](docs/screenshots/staff-entry.png)
+![Staff score entry at /admin: the fruit-and-ghost calculator, the prize round clock and last round's winners with candy tick boxes](docs/screenshots/staff-entry.png)
 
 ### 4. Open the leaderboard screen
 
@@ -111,7 +111,7 @@ refreshes, closed tabs, app restarts and Mac restarts.
 For an off-site copy, drag the `backups/` folder (or the whole `data/` folder while the app is stopped)
 to a USB stick.
 
-![Manage scores at /admin/settings: edit, delete, Show on TV, timer, blocked initials, backup, CSV, reset](docs/screenshots/manage-scores.png)
+![Manage scores at /admin/settings: every score with Show on TV, Edit and Delete, beside the settings cards (timer, run timer, scoring, prize rounds, how to play, music…)](docs/screenshots/manage-scores.png)
 
 ---
 
@@ -119,12 +119,12 @@ to a USB stick.
 
 | Spotlight — the TV jumps to each new player | NEW HIGH SCORE! celebration |
 | --- | --- |
-| ![SAM is 21st of 46, highlighted on page 1 of the lower ranks](docs/screenshots/tv-spotlight.png) | ![NEW HIGH SCORE overlay with Pac-Man chasing frightened ghosts](docs/screenshots/tv-new-high-score.png) |
+| ![XAN is 19th of 46, highlighted in the paging column](docs/screenshots/tv-spotlight.png) | ![NEW HIGH SCORE overlay with Pac-Man chasing frightened ghosts](docs/screenshots/tv-new-high-score.png) |
 
 - **Top 10 always pinned** on the left, with 1st–3rd in gold/silver/bronze with fruit bonuses. Tied
   scores share a rank (1st, 1st, 3rd).
-- **Everyone else** fills the columns to the right (ranks 11–30). With more than 30 players, Pac-Man
-  **eats the page** every 10 seconds to flip to 31–50, 51–70, and so on — with a page indicator.
+- **Everyone else** fills the column beside it (ranks 11–20). With more players, Pac-Man **eats the
+  page** every 10 seconds to flip to 21–30, 31–40, and so on — with a page indicator.
 - **Spotlight:** when a score is added the TV jumps to that player's page, highlights their row, and
   shows a banner like **`★ SAM IS 20TH OF 57! ★`**. It holds for 20 seconds — photo time. Missed it?
   Press **Show on TV** next to any score on the staff screens to bring it back.
@@ -133,7 +133,9 @@ to a USB stick.
   night does.
 - The footer shows the **last run** and total **players**. A small “RECONNECTING…” note appears only if
   the TV loses the server for more than 5 seconds; it reconnects by itself.
-- The layout adapts to the screen shape (3 columns on a 16:9 TV, 2 on 4:3) and text auto-sizes to fit.
+- The **how-to-play rules** take the right-hand side of the screen (40% by default — see
+  [How to play](#how-to-play-beside-the-leaderboard)). The leaderboard fits whatever space is left: two
+  columns at any rules width, three if the rules are switched off. Text auto-sizes to fit.
 
 ## Run timer
 
@@ -204,6 +206,8 @@ repository never redistributes them.
 
 ### Prize rounds: candy for the top players
 
+![ROUND 5 WINNERS! with the top three, candy, and SEE STAFF FOR YOUR CANDY!](docs/screenshots/tv-round-winners.png)
+
 The board runs in short rounds rather than all night, so kids who are still around can actually
 win. With the defaults, **every 15 minutes the top 3 win candy** and the board starts fresh:
 
@@ -242,6 +246,8 @@ Ghosts double like the arcade — **20, 40, 80, 160** for the 1st to 4th ghost, 
 after that — so two ghosts are worth 60. The TV's rules show these same values.
 
 ### How to play, beside the leaderboard
+
+<img src="docs/screenshots/tv-rules.png" alt="The nine rules, each caught mid-animation" width="560">
 
 The TV splits in two: the leaderboard on the left, and on the right the rules for the kids waiting
 in line, one at a time — **enter the maze, avoid the ghosts, collect the fruit, activate the power orb,

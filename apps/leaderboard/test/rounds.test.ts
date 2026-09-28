@@ -101,6 +101,21 @@ describe('prize rounds', () => {
     }
   });
 
+  test("staff can't end a round that hasn't started", async () => {
+    const f = makeFixture();
+    const app = createApp({ service: f.service });
+    try {
+      await new Promise<void>((resolve) => app.server.listen(0, '127.0.0.1', resolve));
+      const base = `http://127.0.0.1:${(app.server.address() as AddressInfo).port}`;
+      const res = await fetch(`${base}/api/round/end`, { method: 'POST' });
+      assert.equal(res.status, 409);
+      assert.equal(f.service.roundStatus().number, 1, 'no round number is skipped');
+    } finally {
+      await app.close();
+      f.cleanup();
+    }
+  });
+
   test('the server ends an overdue round on its own and tells every screen', async () => {
     const f = makeFixture();
     // A round that should have ended while the server was off.
